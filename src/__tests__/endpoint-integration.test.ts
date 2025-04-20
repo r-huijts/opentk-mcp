@@ -1,25 +1,21 @@
 import { ApiService } from '../services/api.js';
-import { ParliamentService } from '../services/parliament-service.js';
 import { extractDocumentLink } from '../utils/html-parser.js';
 
 // Define the base URL
 const BASE_URL = 'https://berthub.eu/tkconv';
 
-// Create instances of the services
+// Create an instance of the API service
 const apiService = new ApiService();
-const parliamentService = new ParliamentService();
 
 // Skip these tests in CI environments
 const itLive = process.env.CI ? it.skip : it;
+
+// Set a longer timeout for these tests since they hit real endpoints
 
 // This test suite is for testing actual API endpoints
 // These tests will be skipped by default and should be run manually
 // when you want to check if the endpoints are working
 describe('Endpoint Integration Tests', () => {
-  // Set a longer timeout for these tests since they hit real endpoints
-  beforeAll(() => {
-    jest.setTimeout(30000);
-  });
 
   describe('ApiService Endpoints', () => {
     itLive('should fetch search results', async () => {
@@ -28,7 +24,7 @@ describe('Endpoint Integration Tests', () => {
       // Just check that we get a results array
       expect(result).toHaveProperty('results');
       expect(Array.isArray(result.results)).toBe(true);
-    });
+    }, 30000);
 
     itLive('should fetch document HTML', async () => {
       const html = await apiService.fetchHtml('/document.html?nummer=2024D39058');
@@ -39,7 +35,7 @@ describe('Endpoint Integration Tests', () => {
 
       const documentLink = extractDocumentLink(html);
       expect(documentLink).not.toBeNull();
-    });
+    }, 30000);
 
     itLive('should download a document', async () => {
       // First get the document page to extract the link
@@ -56,7 +52,7 @@ describe('Endpoint Integration Tests', () => {
       // Check that we get binary data with the correct content type
       expect(data.byteLength).toBeGreaterThan(0);
       expect(contentType).toBe('application/pdf');
-    });
+    }, 30000);
 
     itLive('should fetch a sitemap', async () => {
       const urls = await apiService.fetchSitemap('sitemap-2024.txt');
@@ -65,7 +61,7 @@ describe('Endpoint Integration Tests', () => {
       expect(Array.isArray(urls)).toBe(true);
       expect(urls.length).toBeGreaterThan(0);
       expect(urls[0]).toMatch(/^https?:/);
-    });
+    }, 30000);
 
     itLive('should resolve an external reference', async () => {
       const url = await apiService.resolveExternal('2024D39058');
@@ -73,12 +69,12 @@ describe('Endpoint Integration Tests', () => {
       // Check that we get a URL
       expect(typeof url).toBe('string');
       expect(url.length).toBeGreaterThan(0);
-    });
+    }, 30000);
   });
 
-  describe('ParliamentService Endpoints', () => {
+  describe('Parliament Endpoints', () => {
     itLive('should fetch MPs from tkconv API', async () => {
-      const persons = await parliamentService.getPersons();
+      const persons = await apiService.getPersons();
 
       // Check that we get an array of MPs
       expect(Array.isArray(persons)).toBe(true);
@@ -91,20 +87,19 @@ describe('Endpoint Integration Tests', () => {
         expect(firstPerson).toHaveProperty('Fullname');
         expect(firstPerson).toHaveProperty('Fractie');
       }
-    });
+    }, 30000);
 
     itLive('should fetch a single MP from tkconv API', async () => {
-      // Try to fetch MP with ID 1 (or any valid ID)
-      const person = await parliamentService.getPerson(1);
+      // Try to fetch MP with ID 49108 (a valid ID)
+      const person = await apiService.getPerson(49108);
 
       // Check that we get an object with expected properties
-      // Note: This might fail if MP with ID 1 doesn't exist, but that's OK for integration tests
       if (person) {
         expect(typeof person).toBe('object');
         expect(person).toHaveProperty('Id');
         expect(person).toHaveProperty('Fullname');
       }
-    });
+    }, 30000);
   });
 });
 
@@ -119,7 +114,7 @@ describe('Endpoint Status Report', () => {
       { name: 'Sitemap', url: `${BASE_URL}/sitemap-2024.txt`, method: 'GET' },
       { name: 'External Reference', url: `${BASE_URL}/op/2024D39058`, method: 'GET' },
       { name: 'Parliament Members', url: `${BASE_URL}/kamerleden.html`, method: 'GET' },
-      { name: 'Single Parliament Member', url: `${BASE_URL}/persoon.html?nummer=1`, method: 'GET' },
+      { name: 'Single Parliament Member', url: `${BASE_URL}/persoon.html?nummer=49108`, method: 'GET' },
     ];
 
     console.log('\nEndpoint Status Report:');

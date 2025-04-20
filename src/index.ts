@@ -2,7 +2,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { apiService } from "./services/api.js";
-import { parliamentService } from "./services/parliament-service.js";
 import { extractDocumentLink } from "./utils/html-parser.js";
 
 // Import Buffer for base64 encoding
@@ -102,7 +101,7 @@ mcp.tool(
   async () => {
     try {
       // Use the tkconv API to get the MP list
-      const persons = await parliamentService.getPersons();
+      const persons = await apiService.getPersons();
 
       if (persons.length === 0) {
         return {
