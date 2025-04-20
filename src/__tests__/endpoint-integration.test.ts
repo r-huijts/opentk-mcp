@@ -19,11 +19,30 @@ describe('Endpoint Integration Tests', () => {
 
   describe('ApiService Endpoints', () => {
     itLive('should fetch search results', async () => {
-      const result = await apiService.search<{results: any[]}>('kunstmatige intelligentie');
+      const result = await apiService.search<{results: any[], error?: string}>('kunstmatige intelligentie');
 
-      // Just check that we get a results array
+      // Check that we get a results array without an error
       expect(result).toHaveProperty('results');
       expect(Array.isArray(result.results)).toBe(true);
+      expect(result.error).toBeUndefined();
+    }, 30000);
+
+    itLive('should handle complex search queries with multiple terms', async () => {
+      const result = await apiService.search<{results: any[], error?: string}>('kunstmatige intelligentie AI');
+
+      // Check that we get search results without an error
+      expect(result).toHaveProperty('results');
+      expect(Array.isArray(result.results)).toBe(true);
+      expect(result.error).toBeUndefined();
+    }, 30000);
+
+    itLive('should handle exact phrase search with quotes', async () => {
+      const result = await apiService.search<{results: any[], error?: string}>("\"kunstmatige intelligentie\"");
+
+      // Check that we get search results without an error
+      expect(result).toHaveProperty('results');
+      expect(Array.isArray(result.results)).toBe(true);
+      expect(result.error).toBeUndefined();
     }, 30000);
 
     itLive('should fetch document HTML', async () => {

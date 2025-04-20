@@ -56,21 +56,47 @@ describe('ApiService', () => {
   describe('search', () => {
     itLive('should search for documents', async () => {
       // Search for a common term
-      const result = await apiService.search<{results: any[]}>('klimaat');
+      const result = await apiService.search<{results: any[], error?: string}>('klimaat');
 
       // Check that we get search results
       expect(result).toHaveProperty('results');
       expect(Array.isArray(result.results)).toBe(true);
       // The search might return no results, so we don't check the length
+
+      // Ensure there's no error message
+      expect(result.error).toBeUndefined();
     }, 30000);
 
     itLive('should handle search with options', async () => {
       // Search with the twomonths option
-      const result = await apiService.search<{results: any[]}>('klimaat', { twomonths: true });
+      const result = await apiService.search<{results: any[], error?: string}>('klimaat', { twomonths: true });
 
       // Check that we get search results
       expect(result).toHaveProperty('results');
       expect(Array.isArray(result.results)).toBe(true);
+
+      // Ensure there's no error message
+      expect(result.error).toBeUndefined();
+    }, 30000);
+
+    itLive('should handle complex search queries with multiple terms', async () => {
+      // Search for multiple terms
+      const result = await apiService.search<{results: any[], error?: string}>('kunstmatige intelligentie AI');
+
+      // Check that we get search results without an error
+      expect(result).toHaveProperty('results');
+      expect(Array.isArray(result.results)).toBe(true);
+      expect(result.error).toBeUndefined();
+    }, 30000);
+
+    itLive('should handle exact phrase search with quotes', async () => {
+      // Search for an exact phrase using quotes
+      const result = await apiService.search<{results: any[], error?: string}>("\"kunstmatige intelligentie\"");
+
+      // Check that we get search results without an error
+      expect(result).toHaveProperty('results');
+      expect(Array.isArray(result.results)).toBe(true);
+      expect(result.error).toBeUndefined();
     }, 30000);
   });
 
