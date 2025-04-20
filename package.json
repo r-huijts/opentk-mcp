@@ -7,7 +7,12 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsc && node dist/index.js"
+    "dev": "tsc && node dist/index.js",
+    "test": "jest --config=jest.config.cjs",
+    "test:watch": "jest --config=jest.config.cjs --watch",
+    "test:coverage": "jest --config=jest.config.cjs --coverage",
+    "check-endpoints": "node scripts/check-endpoints.js",
+    "test:endpoints": "jest --config=jest.config.cjs -t \"Endpoint Integration Tests\" --testTimeout=30000"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
@@ -17,7 +22,11 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.17.30",
+    "jest": "^29.7.0",
+    "nock": "^14.0.3",
+    "ts-jest": "^29.3.2",
     "typescript": "^5.8.3"
   }
 }
