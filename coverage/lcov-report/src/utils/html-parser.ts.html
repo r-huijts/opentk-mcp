@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -102,22 +102,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Utility functions for parsing HTML content
@@ -128,24 +128,24 @@
  * @param html The HTML content of the document page
  * @returns The direct link to the document or null if not found
  */
-export function <span class="fstat-no" title="function not covered" >extractDocumentLink(</span>html: string): string | null {
+export function extractDocumentLink(html: string): string | null {
   // Look for the direct link pattern in the HTML
-  const directLinkRegex = <span class="cstat-no" title="statement not covered" >/&lt;a href="(getraw\/[^"]+)"&gt;Directe link naar document&lt;\/a&gt;/;</span>
-  const directLinkMatch = <span class="cstat-no" title="statement not covered" >html.match(directLinkRegex);</span>
+  const directLinkRegex = /&lt;a href="(getraw\/[^"]+)"&gt;Directe link naar document&lt;\/a&gt;/;
+  const directLinkMatch = html.match(directLinkRegex);
   
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (directLinkMatch &amp;&amp; directLinkMatch[1]) {</span>
-<span class="cstat-no" title="statement not covered" >    return directLinkMatch[1];</span>
+  if (directLinkMatch &amp;&amp; directLinkMatch[1]) {
+    return directLinkMatch[1];
   }
   
   // If direct link not found, try to find the iframe source
-  const iframeRegex = <span class="cstat-no" title="statement not covered" >/&lt;iframe[^&gt;]*src=['"]\.?\/(getraw\/[^'"]+)['"]/;</span>
-  const iframeMatch = <span class="cstat-no" title="statement not covered" >html.match(iframeRegex);</span>
+  const iframeRegex = /&lt;iframe[^&gt;]*src=['"]\.?\/(getraw\/[^'"]+)['"]/;
+  const iframeMatch = html.match(iframeRegex);
   
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (iframeMatch &amp;&amp; iframeMatch[1]) {</span>
-<span class="cstat-no" title="statement not covered" >    return iframeMatch[1];</span>
+  if (iframeMatch &amp;&amp; iframeMatch[1]) {
+    return iframeMatch[1];
   }
   
-<span class="cstat-no" title="statement not covered" >  return null;</span>
+  return null;
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -154,7 +154,7 @@ export function <span class="fstat-no" title="function not covered" >extractDocu
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-20T11:03:31.593Z
+                at 2025-04-20T11:45:59.385Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

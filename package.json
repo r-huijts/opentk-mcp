@@ -8,11 +8,11 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc && node dist/index.js",
-    "test": "jest --config=jest.config.cjs",
-    "test:watch": "jest --config=jest.config.cjs --watch",
-    "test:coverage": "jest --config=jest.config.cjs --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs --coverage",
     "check-endpoints": "node scripts/check-endpoints.js",
-    "test:endpoints": "jest --config=jest.config.cjs -t \"Endpoint Integration Tests\" --testTimeout=30000"
+    "test:endpoints": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs -t \"Endpoint Integration Tests\" --testTimeout=30000"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",

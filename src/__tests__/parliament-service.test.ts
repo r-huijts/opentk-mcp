@@ -1,18 +1,15 @@
-import nock from 'nock';
 import { ParliamentService } from '../services/parliament-service.js';
 import { ApiService } from '../services/api.js';
 
-// Mock the API service
-jest.mock('../services/api.js', () => {
-  return {
-    apiService: {
-      fetchHtml: jest.fn()
-    }
-  };
-});
+// Create a mock for the API service
+const mockFetchHtml = jest.fn();
 
-// Get the mocked API service
-const mockedApiService = ApiService as jest.Mocked<typeof ApiService>;
+// Mock the apiService module
+jest.mock('../services/api.js', () => ({
+  apiService: {
+    fetchHtml: mockFetchHtml
+  }
+}));
 
 // Create a new instance of ParliamentService for testing
 const parliamentService = new ParliamentService();
@@ -52,13 +49,13 @@ describe('ParliamentService', () => {
       `;
 
       // Set up the mock to return our HTML
-      (mockedApiService.apiService.fetchHtml as jest.Mock).mockResolvedValue(mockHtml);
+      mockFetchHtml.mockResolvedValue(mockHtml);
 
       // Call the method
       const result = await parliamentService.getPersons();
 
       // Check that the API was called correctly
-      expect(mockedApiService.apiService.fetchHtml).toHaveBeenCalledWith('/kamerleden.html');
+      expect(mockFetchHtml).toHaveBeenCalledWith('/kamerleden.html');
 
       // Check the result
       expect(result).toHaveLength(2);
@@ -82,7 +79,7 @@ describe('ParliamentService', () => {
 
     it('should handle empty or invalid HTML', async () => {
       // Mock an empty HTML response
-      (mockedApiService.apiService.fetchHtml as jest.Mock).mockResolvedValue('<html><body></body></html>');
+      mockFetchHtml.mockResolvedValue('<html><body></body></html>');
 
       // Call the method
       const result = await parliamentService.getPersons();
@@ -93,7 +90,7 @@ describe('ParliamentService', () => {
 
     it('should handle API errors', async () => {
       // Mock an API error
-      (mockedApiService.apiService.fetchHtml as jest.Mock).mockRejectedValue(new Error('API error'));
+      mockFetchHtml.mockRejectedValue(new Error('API error'));
 
       // Call the method
       const result = await parliamentService.getPersons();
@@ -120,13 +117,13 @@ describe('ParliamentService', () => {
       `;
 
       // Set up the mock to return our HTML
-      (mockedApiService.apiService.fetchHtml as jest.Mock).mockResolvedValue(mockHtml);
+      mockFetchHtml.mockResolvedValue(mockHtml);
 
       // Call the method
       const result = await parliamentService.getPerson(123);
 
       // Check that the API was called correctly
-      expect(mockedApiService.apiService.fetchHtml).toHaveBeenCalledWith('/persoon.html?nummer=123');
+      expect(mockFetchHtml).toHaveBeenCalledWith('/persoon.html?nummer=123');
 
       // Check the result
       expect(result).toMatchObject({
@@ -141,7 +138,7 @@ describe('ParliamentService', () => {
 
     it('should handle empty or invalid HTML', async () => {
       // Mock an empty HTML response
-      (mockedApiService.apiService.fetchHtml as jest.Mock).mockResolvedValue('<html><body></body></html>');
+      mockFetchHtml.mockResolvedValue('<html><body></body></html>');
 
       // Call the method
       const result = await parliamentService.getPerson(123);
@@ -155,7 +152,7 @@ describe('ParliamentService', () => {
 
     it('should handle API errors', async () => {
       // Mock an API error
-      (mockedApiService.apiService.fetchHtml as jest.Mock).mockRejectedValue(new Error('API error'));
+      mockFetchHtml.mockRejectedValue(new Error('API error'));
 
       // Call the method
       const result = await parliamentService.getPerson(123);
