@@ -164,13 +164,13 @@ export class ApiService {
       if (!res.ok) {
         // If we get a 500 error, try to use a simplified query instead
         if (res.status === 500) {
-          console.error(`Search API returned 500 for query: ${sanitizedQuery}`);
+          // API returned 500 error
 
           // Try to simplify the query by taking just the first term
           const simplifiedQuery = sanitizedQuery.split(/\s+/)[0];
 
           if (simplifiedQuery && simplifiedQuery !== sanitizedQuery) {
-            console.log(`Retrying with simplified query: ${simplifiedQuery}`);
+            // Retry with simplified query
 
             // Create a simple string for the form data with the simplified query
             const simplifiedForm = `q=${encodeURIComponent(simplifiedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || ""}`;
@@ -219,7 +219,7 @@ export class ApiService {
       // Check if the response is HTML
       const text = await res.text();
       if (text.trim().startsWith('<!DOCTYPE')) {
-        console.error(`The search API returned HTML instead of JSON for query: ${sanitizedQuery}`);
+        // The API returned HTML instead of JSON
         return { results: [] } as T;
       }
 
@@ -227,11 +227,11 @@ export class ApiService {
       try {
         return JSON.parse(text) as T;
       } catch (error) {
-        console.error(`Failed to parse JSON for query: ${sanitizedQuery}`, error);
+        // Failed to parse JSON
         return { results: [] } as T;
       }
     } catch (error) {
-      console.error(`Unexpected error in search: ${(error as Error).message}`);
+      // Unexpected error in search
       throw error;
     }
   }
