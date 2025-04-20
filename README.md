@@ -119,11 +119,13 @@ The search functionality has been implemented correctly based on the tkconv API 
 - Automatically simplifies complex queries that cause API errors
 
 Example search operators supported:
-- `term1 term2` - Finds documents containing both terms anywhere
-- `"exact phrase"` - Finds documents with the exact phrase
+- `term1 term2` - Finds documents containing both terms anywhere (e.g., `Joe Biden` finds documents with both words anywhere)
+- `"exact phrase"` - Finds documents with the exact phrase (e.g., `"Joe Biden"` only finds documents with these words next to each other)
 - `NEAR(term1 term2)` - Finds documents with terms near each other
-- `term1 NOT term2` - Finds documents with term1 but not term2
+- `term1 NOT term2` - Finds documents with term1 but not term2 (e.g., `Hubert NOT Bruls` finds documents with 'Hubert' but not 'Bruls')
 - `term1 OR term2 NOT term3` - Supports complex boolean logic
+
+Note: The capital letters in operators like `NOT` and `OR` are important for the search to work correctly.
 
 When a search query causes an error in the underlying API (which can happen with complex queries), the system will automatically try to simplify the query and provide a helpful error message to the user.
 
