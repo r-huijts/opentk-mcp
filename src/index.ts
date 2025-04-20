@@ -256,7 +256,7 @@ mcp.tool(
           ]
         };
       } catch (directError: any) {
-        console.log(`Direct download failed, trying document page: ${directError.message || 'Unknown error'}`);
+        console.error(`Direct download failed, trying document page: ${directError.message || 'Unknown error'}`);
 
         // If direct download fails, try to get the document page and extract the link
         const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);

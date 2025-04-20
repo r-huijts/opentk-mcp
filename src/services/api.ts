@@ -272,7 +272,7 @@ export class ApiService {
           return location;
         }
       } catch (directError) {
-        console.log(`Direct external reference resolution failed: ${(directError as Error).message}`);
+        console.error(`Direct external reference resolution failed: ${(directError as Error).message}`);
       }
 
       // If the direct approach failed, try to get the document page and extract the link
@@ -291,7 +291,7 @@ export class ApiService {
           return anyLinkMatch[1];
         }
       } catch (htmlError) {
-        console.log(`HTML approach for external reference failed: ${(htmlError as Error).message}`);
+        console.error(`HTML approach for external reference failed: ${(htmlError as Error).message}`);
       }
 
       // If all else fails, construct a link to the document page

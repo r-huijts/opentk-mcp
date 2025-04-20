@@ -136,13 +136,13 @@ describe('Endpoint Status Report', () => {
       { name: 'Single Parliament Member', url: `${BASE_URL}/persoon.html?nummer=49108`, method: 'GET' },
     ];
 
-    console.log('\nEndpoint Status Report:');
-    console.log('=====================');
-    console.log('To check if these endpoints are working, run the integration tests with:');
-    console.log('npm test -- -t "Endpoint Integration Tests" --testTimeout=30000');
-    console.log('\nEndpoints to test:');
+    console.error('\nEndpoint Status Report:');
+    console.error('=====================');
+    console.error('To check if these endpoints are working, run the integration tests with:');
+    console.error('npm test -- -t "Endpoint Integration Tests" --testTimeout=30000');
+    console.error('\nEndpoints to test:');
     endpoints.forEach(endpoint => {
-      console.log(`- ${endpoint.name}: ${endpoint.method} ${endpoint.url}`);
+      console.error(`- ${endpoint.name}: ${endpoint.method} ${endpoint.url}`);
     });
 
     // This test always passes
