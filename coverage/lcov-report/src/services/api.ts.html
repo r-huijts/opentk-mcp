@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">62.13% </span>
+                <span class="strong">60.73% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>105/169</span>
+                <span class='fraction'>99/163</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">62.27% </span>
+                <span class="strong">60.86% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>104/167</span>
+                <span class='fraction'>98/161</span>
             </div>
         
             
@@ -572,11 +572,7 @@
 <a name='L507'></a><a href='#L507'>507</a>
 <a name='L508'></a><a href='#L508'>508</a>
 <a name='L509'></a><a href='#L509'>509</a>
-<a name='L510'></a><a href='#L510'>510</a>
-<a name='L511'></a><a href='#L511'>511</a>
-<a name='L512'></a><a href='#L512'>512</a>
-<a name='L513'></a><a href='#L513'>513</a>
-<a name='L514'></a><a href='#L514'>514</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L510'></a><a href='#L510'>510</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -716,9 +712,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -754,9 +748,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1227,16 +1219,15 @@ export class ApiService {
       // Only sanitize backslashes which could cause issues
       const sanitizedQuery = query.replace(/[\\]/g, ' ').trim();
 &nbsp;
-      // Create form data for POST request (the API expects multipart/form-data)
-      const formData = new URLSearchParams();
-      formData.append('q', sanitizedQuery);
-      formData.append('twomonths', options.twomonths ? "true" : "false");
-      formData.append('soorten', options.soorten || "");
+      // Create a simple string for the form data (the API expects application/x-www-form-urlencoded)
+      const formData = `q=${encodeURIComponent(sanitizedQuery)}&amp;twomonths=${options.twomonths ? "true" : "false"}&amp;soorten=${options.soorten || ""}`;
+&nbsp;
 &nbsp;
       const res = await fetch(`${BASE_URL}/search`, {
         method: "POST",
         headers: {
           'Accept': '*/*',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
           'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(sanitizedQuery)}&amp;twomonths=${options.twomonths ? "true" : "false"}&amp;soorten=${options.soorten || "alles"}`,
           'Origin': BASE_URL,
@@ -1248,7 +1239,6 @@ export class ApiService {
           'sec-ch-ua': '"Chromium";v="135", "Not-A.Brand";v="8"',
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"'
-          // Note: Content-Type is set automatically by FormData
         },
         body: formData,
         // We would add timeout here, but it's not supported in the RequestInit type
@@ -1265,16 +1255,15 @@ export class ApiService {
           if (simplifiedQuery &amp;&amp; simplifiedQuery !== sanitizedQuery) {
             console.log(`Retrying with simplified query: ${simplifiedQuery}`);
 &nbsp;
-            // Create new form data with the simplified query
-            const simplifiedForm = new URLSearchParams();
-            simplifiedForm.append('q', simplifiedQuery);
-            simplifiedForm.append('twomonths', options.twomonths ? <span class="branch-0 cbranch-no" title="branch not covered" >"true" </span>: "false");
-            simplifiedForm.append('soorten', options.soorten || "");
+            // Create a simple string for the form data with the simplified query
+            const simplifiedForm = `q=${encodeURIComponent(simplifiedQuery)}&amp;twomonths=${options.twomonths ? <span class="branch-0 cbranch-no" title="branch not covered" >"true" </span>: "false"}&amp;soorten=${options.soorten || ""}`;
+&nbsp;
 &nbsp;
             const retryRes = await fetch(`${BASE_URL}/search`, {
               method: "POST",
               headers: {
                 'Accept': '*/*',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
                 'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(simplifiedQuery)}&amp;twomonths=${options.twomonths ? <span class="branch-0 cbranch-no" title="branch not covered" >"true" </span>: "false"}&amp;soorten=${options.soorten || "alles"}`,
                 'Origin': BASE_URL,
@@ -1286,7 +1275,6 @@ export class ApiService {
                 'sec-ch-ua': '"Chromium";v="135", "Not-A.Brand";v="8"',
                 'sec-ch-ua-mobile': '?0',
                 'sec-ch-ua-platform': '"macOS"'
-                // Note: Content-Type is set automatically by FormData
               },
               body: simplifiedForm
             });
@@ -1609,7 +1597,7 @@ export const apiService = new ApiService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-20T12:43:21.358Z
+                at 2025-04-20T12:46:16.768Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

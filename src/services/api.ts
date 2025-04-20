@@ -136,16 +136,15 @@ export class ApiService {
       // Only sanitize backslashes which could cause issues
       const sanitizedQuery = query.replace(/[\\]/g, ' ').trim();
 
-      // Create form data for POST request (the API expects multipart/form-data)
-      const formData = new URLSearchParams();
-      formData.append('q', sanitizedQuery);
-      formData.append('twomonths', options.twomonths ? "true" : "false");
-      formData.append('soorten', options.soorten || "");
+      // Create a simple string for the form data (the API expects application/x-www-form-urlencoded)
+      const formData = `q=${encodeURIComponent(sanitizedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || ""}`;
+
 
       const res = await fetch(`${BASE_URL}/search`, {
         method: "POST",
         headers: {
           'Accept': '*/*',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
           'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(sanitizedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || "alles"}`,
           'Origin': BASE_URL,
@@ -157,7 +156,6 @@ export class ApiService {
           'sec-ch-ua': '"Chromium";v="135", "Not-A.Brand";v="8"',
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"'
-          // Note: Content-Type is set automatically by FormData
         },
         body: formData,
         // We would add timeout here, but it's not supported in the RequestInit type
@@ -174,16 +172,15 @@ export class ApiService {
           if (simplifiedQuery && simplifiedQuery !== sanitizedQuery) {
             console.log(`Retrying with simplified query: ${simplifiedQuery}`);
 
-            // Create new form data with the simplified query
-            const simplifiedForm = new URLSearchParams();
-            simplifiedForm.append('q', simplifiedQuery);
-            simplifiedForm.append('twomonths', options.twomonths ? "true" : "false");
-            simplifiedForm.append('soorten', options.soorten || "");
+            // Create a simple string for the form data with the simplified query
+            const simplifiedForm = `q=${encodeURIComponent(simplifiedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || ""}`;
+
 
             const retryRes = await fetch(`${BASE_URL}/search`, {
               method: "POST",
               headers: {
                 'Accept': '*/*',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
                 'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(simplifiedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || "alles"}`,
                 'Origin': BASE_URL,
@@ -195,7 +192,6 @@ export class ApiService {
                 'sec-ch-ua': '"Chromium";v="135", "Not-A.Brand";v="8"',
                 'sec-ch-ua-mobile': '?0',
                 'sec-ch-ua-platform': '"macOS"'
-                // Note: Content-Type is set automatically by FormData
               },
               body: simplifiedForm
             });
