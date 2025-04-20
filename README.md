@@ -101,7 +101,7 @@ All API interactions have been improved to be more robust and resilient:
 - **Proper Headers**: Includes User-Agent and Accept headers for better compatibility
 - **HTML Detection**: All endpoints can detect and handle HTML responses appropriately
 - **Detailed Logging**: Comprehensive error logging for easier troubleshooting
-- **Service Layer**: Dedicated services for different API providers (tkconv and OData)
+- **Service Layer**: Dedicated services for different functionality (API, Parliament data)
 
 These improvements make the server more reliable when dealing with external APIs that may have inconsistent behavior or temporary issues.
 
@@ -144,6 +144,17 @@ The document download functionality has been enhanced to handle various document
 5. **Content Type Normalization**: Ensures consistent handling of PDFs regardless of how they're served
 
 This multi-step approach ensures that documents can be retrieved even when the API structure changes or when documents are embedded in HTML pages rather than directly accessible.
+
+### Simplified API Dependencies
+
+The server now exclusively uses the tkconv API for all functionality:
+
+- **Removed OData Dependency**: Eliminated dependency on the Dutch Parliament's OData API, which was unreliable and frequently changed
+- **HTML Parsing**: Added HTML parsing capabilities to extract structured data from tkconv HTML pages
+- **Consistent Data Format**: Maintains the same data structure for backward compatibility
+- **Improved Reliability**: Reduced external dependencies for better stability
+
+This change simplifies the codebase and improves reliability by focusing on a single, well-maintained API source.
 
 ## License
 

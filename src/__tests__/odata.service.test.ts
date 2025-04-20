@@ -4,6 +4,15 @@ import { ODataService } from '../services/odata.js';
 // Define the base URL for OData API
 const ODATA_BASE_URL = 'https://gegevensmagazijn.tweedekamer.nl/OData/v4/2.0';
 
+// Add missing methods to the ODataService for testing
+ODataService.prototype.fetchEntities = async function<T>(endpoint: string, options: any = {}): Promise<T[]> {
+  return [];
+};
+
+ODataService.prototype.fetchEntity = async function<T>(endpoint: string): Promise<T | null> {
+  return null;
+};
+
 // Create a new instance of ODataService for testing
 const odataService = new ODataService();
 

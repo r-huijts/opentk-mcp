@@ -1,5 +1,4 @@
 import fetch, { RequestInit } from "node-fetch";
-import FormData from "form-data";
 
 export const BASE_URL = "https://berthub.eu/tkconv";
 
@@ -19,13 +18,13 @@ export class ApiService {
       // Sanitize the endpoint to avoid potential issues
       const sanitizedEndpoint = endpoint.replace(/[\s]+/g, ' ').trim();
       const url = `${BASE_URL}${sanitizedEndpoint}`;
-
+      
       // Add default headers for better compatibility
       const res = await fetch(url, {
-        headers: {
+        headers: { 
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (compatible; OpenTK-MCP/1.0)',
-          ...options.headers
+          ...options.headers 
         },
         // We would add timeout here, but it's not supported in the RequestInit type
         ...options
@@ -73,7 +72,7 @@ export class ApiService {
       // Sanitize the endpoint to avoid potential issues
       const sanitizedEndpoint = endpoint.replace(/[\s]+/g, ' ').trim();
       const url = `${BASE_URL}${sanitizedEndpoint}`;
-
+      
       // Add default headers for better compatibility
       const res = await fetch(url, {
         headers: {
@@ -107,7 +106,7 @@ export class ApiService {
       // Sanitize the endpoint to avoid potential issues
       const sanitizedEndpoint = endpoint.replace(/[\s]+/g, ' ').trim();
       const url = `${BASE_URL}${sanitizedEndpoint}`;
-
+      
       // Add default headers for better compatibility
       const res = await fetch(url, {
         headers: {
@@ -164,7 +163,7 @@ export class ApiService {
       const sanitizedQuery = query.replace(/[\"\'\\]/g, ' ').trim();
 
       // Create form data for POST request (the API expects multipart/form-data)
-      const formData = new FormData();
+      const formData = new URLSearchParams();
       formData.append('q', sanitizedQuery);
       formData.append('twomonths', options.twomonths ? "true" : "false");
       formData.append('soorten', options.soorten || "");
@@ -202,7 +201,7 @@ export class ApiService {
             console.log(`Retrying with simplified query: ${simplifiedQuery}`);
 
             // Create new form data with the simplified query
-            const simplifiedForm = new FormData();
+            const simplifiedForm = new URLSearchParams();
             simplifiedForm.append('q', simplifiedQuery);
             simplifiedForm.append('twomonths', options.twomonths ? "true" : "false");
             simplifiedForm.append('soorten', options.soorten || "");
@@ -239,9 +238,9 @@ export class ApiService {
           }
 
           // If retry failed or wasn't attempted, return empty results with a message
-          return {
-            results: [],
-            error: `The search query '${sanitizedQuery}' caused an error in the search API. Try simplifying your query.`
+          return { 
+            results: [], 
+            error: `The search query '${sanitizedQuery}' caused an error in the search API. Try simplifying your query.` 
           } as T;
         }
         throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -276,32 +275,61 @@ export class ApiService {
     try {
       // Sanitize the external ID
       const sanitizedExtId = extId.replace(/[\s]+/g, ' ').trim();
-
-      const res = await fetch(`${BASE_URL}/op/${encodeURIComponent(sanitizedExtId)}`, {
-        redirect: "manual",
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; OpenTK-MCP/1.0)'
-        },
-        // We would add timeout here, but it's not supported in the RequestInit type
-      });
-
-      // Even if the response is not OK, we still want to check for a location header
-      const location = res.headers.get("location") || "";
-
-      // If we didn't get a location header but the response was OK, try to extract from body
-      if (!location && res.ok) {
-        const text = await res.text();
-        // Look for a redirect URL in the response body (simple heuristic)
-        const match = text.match(/window\.location\s*=\s*['"]([^'"]+)['"]/);
-        if (match && match[1]) {
-          return match[1];
+      
+      // First try the direct approach with the /op/ endpoint
+      try {
+        const res = await fetch(`${BASE_URL}/op/${encodeURIComponent(sanitizedExtId)}`, {
+          redirect: "manual",
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; OpenTK-MCP/1.0)'
+          }
+        });
+        
+        // Even if the response is not OK, we still want to check for a location header
+        const location = res.headers.get("location") || "";
+        
+        // If we didn't get a location header but the response was OK, try to extract from body
+        if (!location && res.ok) {
+          const text = await res.text();
+          // Look for a redirect URL in the response body (simple heuristic)
+          const match = text.match(/window\.location\s*=\s*['"]([^'"]+)['"]/);
+          if (match && match[1]) {
+            return match[1];
+          }
         }
+        
+        if (location) {
+          return location;
+        }
+      } catch (directError) {
+        console.log(`Direct external reference resolution failed: ${(directError as Error).message}`);
       }
-
-      return location;
+      
+      // If the direct approach failed, try to get the document page and extract the link
+      try {
+        const html = await this.fetchHtml(`/document.html?nummer=${encodeURIComponent(sanitizedExtId)}`);
+        
+        // Look for the link to the Tweede Kamer site
+        const tkLinkMatch = html.match(/href="(https:\/\/www\.tweedekamer\.nl\/kamerstukken\/[^"]+)"/);
+        if (tkLinkMatch && tkLinkMatch[1]) {
+          return tkLinkMatch[1];
+        }
+        
+        // If we couldn't find a TK link, look for any external link
+        const anyLinkMatch = html.match(/href="(https?:\/\/[^"]+)"/);
+        if (anyLinkMatch && anyLinkMatch[1]) {
+          return anyLinkMatch[1];
+        }
+      } catch (htmlError) {
+        console.log(`HTML approach for external reference failed: ${(htmlError as Error).message}`);
+      }
+      
+      // If all else fails, construct a link to the document page
+      return `${BASE_URL}/document.html?nummer=${encodeURIComponent(sanitizedExtId)}`;
     } catch (error) {
       console.error(`Error resolving external reference: ${(error as Error).message}`);
-      return "";
+      // Return a fallback URL to the document page
+      return `${BASE_URL}/document.html?nummer=${encodeURIComponent(extId)}`;
     }
   }
 
@@ -314,14 +342,14 @@ export class ApiService {
     try {
       // Sanitize the path
       const sanitizedPath = path.replace(/[\s]+/g, ' ').trim();
-
+      
       const res = await fetch(`${BASE_URL}/${sanitizedPath}`, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; OpenTK-MCP/1.0)'
         },
         // We would add timeout here, but it's not supported in the RequestInit type
       });
-
+      
       if (!res.ok) {
         // For 404 errors, return an empty array instead of failing
         if (res.status === 404) {
@@ -330,15 +358,15 @@ export class ApiService {
         }
         throw new Error(`API error: ${res.status} ${res.statusText}`);
       }
-
+      
       const text = await res.text();
-
+      
       // Check if the response is HTML (which would be an error for a sitemap)
       if (text.trim().startsWith('<!DOCTYPE')) {
         console.error(`The API returned HTML instead of a sitemap for path: ${sanitizedPath}`);
         return [];
       }
-
+      
       return text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
     } catch (error) {
       console.error(`Error fetching sitemap: ${(error as Error).message}`);
