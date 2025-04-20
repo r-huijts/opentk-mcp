@@ -169,6 +169,9 @@ export class ApiService {
           // Try to simplify the query by taking just the first term
           const simplifiedQuery = sanitizedQuery.split(/\s+/)[0];
 
+          // Initialize error message
+          let errorMessage = "Unknown error";
+
           if (simplifiedQuery && simplifiedQuery !== sanitizedQuery) {
             // Retry with simplified query
 
@@ -202,15 +205,20 @@ export class ApiService {
                 const retryData = JSON.parse(retryText);
                 return retryData as T;
               } catch (e) {
-                // If parsing fails, fall back to empty results
+                // If parsing fails, capture the error message
+                errorMessage = e instanceof Error ? e.message : String(e);
+                console.error(`Failed to parse JSON from retry: ${errorMessage}`);
               }
+            } else {
+              errorMessage = `Retry failed with status: ${retryRes.status} ${retryRes.statusText}`;
+              console.error(errorMessage);
             }
           }
 
           // If retry failed or wasn't attempted, return empty results with a message
           return {
             results: [],
-            error: `The search query '${sanitizedQuery}' caused an error in the search API. Try simplifying your query.`
+            error: `The search query '${sanitizedQuery}' caused an error in the search API: ${errorMessage}. Try simplifying your query.`
           } as T;
         }
         throw new Error(`API error: ${res.status} ${res.statusText}`);
