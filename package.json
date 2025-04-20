@@ -11,7 +11,6 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs --coverage",
-    "check-endpoints": "node scripts/check-endpoints.js",
     "test:endpoints": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.mjs -t \"Endpoint Integration Tests\" --testTimeout=30000"
   },
   "dependencies": {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1745149559398" clover="3.2.0">
-  <project timestamp="1745149559398" name="All files">
-    <metrics statements="344" coveredstatements="105" conditionals="154" coveredconditionals="53" methods="37" coveredmethods="8" elements="535" coveredelements="166" complexity="0" loc="344" ncloc="344" packages="3" files="5" classes="5"/>
+<coverage generated="1745149955796" clover="3.2.0">
+  <project timestamp="1745149955796" name="All files">
+    <metrics statements="309" coveredstatements="106" conditionals="144" coveredconditionals="53" methods="34" coveredmethods="8" elements="487" coveredelements="167" complexity="0" loc="309" ncloc="309" packages="3" files="4" classes="4"/>
     <package name="src">
       <metrics statements="121" coveredstatements="0" conditionals="53" coveredconditionals="0" methods="22" coveredmethods="0"/>
       <file name="index.ts" path="/Users/happyhawking/Documents/Projects/AI-ML/LLM-Projects/Claude/servers/opentk-mcp/src/index.ts">
@@ -130,10 +130,10 @@
       </file>
     </package>
     <package name="src.services">
-      <metrics statements="214" coveredstatements="96" conditionals="95" coveredconditionals="47" methods="14" coveredmethods="7"/>
+      <metrics statements="179" coveredstatements="97" conditionals="85" coveredconditionals="47" methods="11" coveredmethods="7"/>
       <file name="api.ts" path="/Users/happyhawking/Documents/Projects/AI-ML/LLM-Projects/Claude/servers/opentk-mcp/src/services/api.ts">
         <metrics statements="123" coveredstatements="96" conditionals="61" coveredconditionals="47" methods="7" coveredmethods="7"/>
-        <line num="3" count="1" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
         <line num="17" count="4" type="stmt"/>
         <line num="19" count="4" type="stmt"/>
         <line num="20" count="4" type="stmt"/>
@@ -255,48 +255,10 @@
         <line num="370" count="3" type="stmt"/>
         <line num="372" count="0" type="stmt"/>
         <line num="373" count="0" type="stmt"/>
-        <line num="379" count="1" type="stmt"/>
-      </file>
-      <file name="odata.ts" path="/Users/happyhawking/Documents/Projects/AI-ML/LLM-Projects/Claude/servers/opentk-mcp/src/services/odata.ts">
-        <metrics statements="35" coveredstatements="0" conditionals="10" coveredconditionals="0" methods="3" coveredmethods="0"/>
-        <line num="7" count="0" type="stmt"/>
-        <line num="16" count="0" type="stmt"/>
-        <line num="27" count="0" type="stmt"/>
-        <line num="28" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="29" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="41" count="0" type="stmt"/>
-        <line num="42" count="0" type="stmt"/>
-        <line num="53" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="54" count="0" type="stmt"/>
-        <line num="55" count="0" type="stmt"/>
-        <line num="58" count="0" type="stmt"/>
-        <line num="60" count="0" type="stmt"/>
-        <line num="61" count="0" type="stmt"/>
-        <line num="62" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="64" count="0" type="stmt"/>
-        <line num="65" count="0" type="stmt"/>
-        <line num="68" count="0" type="stmt"/>
-        <line num="69" count="0" type="stmt"/>
-        <line num="79" count="0" type="stmt"/>
-        <line num="81" count="0" type="stmt"/>
-        <line num="82" count="0" type="stmt"/>
-        <line num="92" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="93" count="0" type="stmt"/>
-        <line num="96" count="0" type="stmt"/>
-        <line num="97" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="100" count="0" type="stmt"/>
-        <line num="102" count="0" type="stmt"/>
-        <line num="112" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="113" count="0" type="stmt"/>
-        <line num="116" count="0" type="stmt"/>
-        <line num="117" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="120" count="0" type="stmt"/>
-        <line num="121" count="0" type="stmt"/>
-        <line num="127" count="0" type="stmt"/>
+        <line num="379" count="2" type="stmt"/>
       </file>
       <file name="parliament-service.ts" path="/Users/happyhawking/Documents/Projects/AI-ML/LLM-Projects/Claude/servers/opentk-mcp/src/services/parliament-service.ts">
-        <metrics statements="56" coveredstatements="0" conditionals="24" coveredconditionals="0" methods="4" coveredmethods="0"/>
+        <metrics statements="56" coveredstatements="1" conditionals="24" coveredconditionals="0" methods="4" coveredmethods="0"/>
         <line num="12" count="0" type="stmt"/>
         <line num="14" count="0" type="stmt"/>
         <line num="17" count="0" type="stmt"/>
@@ -352,7 +314,7 @@
         <line num="149" count="0" type="stmt"/>
         <line num="163" count="0" type="stmt"/>
         <line num="164" count="0" type="stmt"/>
-        <line num="170" count="0" type="stmt"/>
+        <line num="170" count="1" type="stmt"/>
       </file>
     </package>
     <package name="src.utils">

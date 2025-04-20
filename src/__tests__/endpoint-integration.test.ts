@@ -17,7 +17,9 @@ const itLive = process.env.CI ? it.skip : it;
 // when you want to check if the endpoints are working
 describe('Endpoint Integration Tests', () => {
   // Set a longer timeout for these tests since they hit real endpoints
-  jest.setTimeout(30000);
+  beforeAll(() => {
+    jest.setTimeout(30000);
+  });
 
   describe('ApiService Endpoints', () => {
     itLive('should fetch search results', async () => {
