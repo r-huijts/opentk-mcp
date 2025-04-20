@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1745152922089" clover="3.2.0">
-  <project timestamp="1745152922089" name="All files">
-    <metrics statements="297" coveredstatements="113" conditionals="140" coveredconditionals="52" methods="34" coveredmethods="11" elements="471" coveredelements="176" complexity="0" loc="297" ncloc="297" packages="3" files="3" classes="3"/>
+<coverage generated="1745153001373" clover="3.2.0">
+  <project timestamp="1745153001373" name="All files">
+    <metrics statements="298" coveredstatements="114" conditionals="140" coveredconditionals="52" methods="34" coveredmethods="11" elements="472" coveredelements="177" complexity="0" loc="298" ncloc="298" packages="3" files="4" classes="4"/>
     <package name="src">
-      <metrics statements="121" coveredstatements="0" conditionals="53" coveredconditionals="0" methods="22" coveredmethods="0"/>
+      <metrics statements="122" coveredstatements="1" conditionals="53" coveredconditionals="0" methods="22" coveredmethods="0"/>
+      <file name="config.ts" path="/Users/happyhawking/Documents/Projects/AI-ML/LLM-Projects/Claude/servers/opentk-mcp/src/config.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="6" count="2" type="stmt"/>
+      </file>
       <file name="index.ts" path="/Users/happyhawking/Documents/Projects/AI-ML/LLM-Projects/Claude/servers/opentk-mcp/src/index.ts">
         <metrics statements="121" coveredstatements="0" conditionals="53" coveredconditionals="0" methods="22" coveredmethods="0"/>
         <line num="10" count="0" type="stmt"/>
