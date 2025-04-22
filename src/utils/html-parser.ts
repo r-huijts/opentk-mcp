@@ -45,6 +45,7 @@ interface Activity {
   date: string;
   time?: string;
   location?: string;
+  committee?: string;
   url: string;
   type?: string;
 }
@@ -392,9 +393,26 @@ export function extractActivitiesFromHtml(html: string, baseUrl: string): Activi
     const date = dateMatch[1];
     const time = dateMatch[2] || undefined;
 
-    // Extract title and link
-    if (!cells[1]) continue;
-    const titleCell = cells[1];
+    // Extract location (zaal) if available
+    let location: string | undefined = undefined;
+    if (cells.length > 1 && cells[1]) {
+      location = cells[1].replace(/<[^>]+>/g, "").trim() || undefined;
+    }
+
+    // Extract committee if available
+    let committee: string | undefined = undefined;
+    if (cells.length > 2 && cells[2]) {
+      committee = cells[2].replace(/<[^>]+>/g, "").trim() || undefined;
+      // Extract committee name from abbr title if present
+      const abbrMatch = cells[2].match(/<abbr title="([^"]+)">/i);
+      if (abbrMatch && abbrMatch[1]) {
+        committee = abbrMatch[1].trim();
+      }
+    }
+
+    // Extract title and link from the subject column (index 3)
+    if (cells.length <= 3 || !cells[3]) continue;
+    const titleCell = cells[3];
     const titleMatch = titleCell.match(/<a href="(activiteit\.html\?nummer=([^"]+))">([^<]+)<\/a>/);
 
     if (!titleMatch || !titleMatch[1] || !titleMatch[2] || !titleMatch[3]) continue;
@@ -403,16 +421,10 @@ export function extractActivitiesFromHtml(html: string, baseUrl: string): Activi
     const url = new URL(titleMatch[1], baseUrl).href;
     const title = titleMatch[3].trim();
 
-    // Extract location if available
-    let location: string | undefined = undefined;
-    if (cells.length > 2 && cells[2]) {
-      location = cells[2].replace(/<[^>]+>/g, "").trim() || undefined;
-    }
-
-    // Extract type if available
+    // Extract type/description if available (index 4)
     let type: string | undefined = undefined;
-    if (cells.length > 3 && cells[3]) {
-      type = cells[3].replace(/<[^>]+>/g, "").trim() || undefined;
+    if (cells.length > 4 && cells[4]) {
+      type = cells[4].replace(/<[^>]+>/g, "").trim() || undefined;
     }
 
     activities.push({
@@ -421,6 +433,7 @@ export function extractActivitiesFromHtml(html: string, baseUrl: string): Activi
       date: date,
       time,
       location,
+      committee,
       type,
       url: url
     });

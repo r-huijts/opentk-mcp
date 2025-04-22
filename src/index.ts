@@ -482,7 +482,7 @@ mcp.tool(
 /** Get upcoming activities */
 mcp.tool(
   "get_upcoming_activities",
-  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. Each activity includes details like date, time, location, and type. This tool is ideal for tracking the parliamentary agenda and identifying opportunities to follow specific discussions or decisions.",
+  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. Each activity includes details like date, time, location, committee, and type. This tool is ideal for tracking the parliamentary agenda and identifying opportunities to follow specific discussions or decisions.",
   {
     limit: z.number().optional().describe("Maximum number of activities to return (default: 20, max: 100)")
   },
@@ -495,10 +495,16 @@ mcp.tool(
       const activities = extractActivitiesFromHtml(html, BASE_URL);
 
       if (activities.length === 0) {
+        // If we couldn't extract activities from the HTML, return a simplified response
+        // This could happen if the page structure changes or uses dynamic content
         return {
           content: [{
             type: "text",
-            text: "No upcoming activities found or there was an error retrieving the activities list. Please try again later."
+            text: JSON.stringify({
+              error: "No upcoming activities found or there was an error retrieving the activities list.",
+              note: "The activities page may use dynamic content rendering. Please try again later or check the website directly.",
+              url: `${BASE_URL}/activiteiten.html`
+            }, null, 2)
           }]
         };
       }
@@ -510,12 +516,23 @@ mcp.tool(
         return dateA.getTime() - dateB.getTime(); // Ascending order (upcoming first)
       }).slice(0, validatedLimit);
 
+      // Group activities by date for better organization
+      const groupedActivities: Record<string, any[]> = {};
+      sortedActivities.forEach(activity => {
+        const date = activity.date || 'unknown';
+        if (!groupedActivities[date]) {
+          groupedActivities[date] = [];
+        }
+        groupedActivities[date].push(activity);
+      });
+
       return {
         content: [{
           type: "text",
           text: JSON.stringify({
             total: activities.length,
             limit: validatedLimit,
+            groupedByDate: groupedActivities,
             activities: sortedActivities
           }, null, 2)
         }]
@@ -524,7 +541,10 @@ mcp.tool(
       return {
         content: [{
           type: "text",
-          text: `Error fetching upcoming activities: ${error.message || 'Unknown error'}`
+          text: JSON.stringify({
+            error: `Error fetching upcoming activities: ${error.message || 'Unknown error'}`,
+            url: `${BASE_URL}/activiteiten.html`
+          }, null, 2)
         }]
       };
     }
