@@ -1,5 +1,9 @@
 # OpenTK Model Context Protocol Server
 
+> **Important Attribution**: This MCP server is built as a wrapper around the excellent [OpenTK project](https://berthub.eu/tkconv/) created by [Bert Hubert](https://berthub.eu/). The OpenTK project provides unprecedented access to Dutch parliamentary data through a user-friendly interface. Learn more about the project in Bert's article: [Welkom bij OpenTK](https://berthub.eu/articles/posts/welkom-bij-opentk/). All credit for the underlying data access and processing goes to Bert Hubert and his contributions to open government data.
+
+A bridge between large language models (LLMs) and Dutch parliamentary data through a standardized interface. This MCP server provides access to Dutch parliamentary documents, debates, and member information from the Tweede Kamer.
+
 ## Real-World Natural Language Interaction Examples
 
 ### Example 1: Researching Parliamentary Discussions on Climate Policy
@@ -123,6 +127,14 @@ The API service includes robust error handling:
 - Fallback to simplified queries when complex ones fail
 - Detailed error messages for debugging
 - Proper logging to stderr (not stdout, which would break the stdio transport)
+
+## Configuration
+
+The server connects to Bert Hubert's [tkconv service](https://berthub.eu/tkconv/) as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs. This service, created by Bert Hubert, does the heavy lifting of collecting, organizing, and making available Dutch parliamentary data in a developer-friendly format. Our MCP server builds upon this foundation to create a standardized interface for AI assistants to interact with this valuable data.
+
+## License
+
+MIT
 
 ## Conclusion
 
