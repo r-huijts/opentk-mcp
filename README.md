@@ -81,65 +81,6 @@ The server uses the `@modelcontextprotocol/sdk` to implement the MCP specificati
 
 The project leverages Bert Hubert's tkconv service as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs.
 
-## Project Structure
-
-The project follows a modular structure:
-
-```
-opentk-mcp/
-├── src/
-│   ├── index.ts                # Main entry point and MCP tool definitions
-│   ├── config.ts               # Configuration settings
-│   ├── services/
-│   │   └── api.ts              # Core API service for data fetching
-│   ├── utils/
-│   │   └── html-parser.js      # Utilities for parsing HTML responses
-│   └── __tests__/              # Test files
-│       ├── api-service.test.ts # Tests for API service
-│       └── endpoint-integration.test.ts # Integration tests
-├── dist/                       # Compiled JavaScript output
-├── package.json                # Project dependencies and scripts
-└── tsconfig.json               # TypeScript configuration
-```
-
-## API Service Methods
-
-The `ApiService` class in `src/services/api.ts` provides the core functionality for interacting with the tkconv API. These methods are used internally by the MCP tools, and some are directly exposed as tools while others serve as supporting functions. Here are the key methods:
-
-### 1. `fetchJson<T>(path: string, options?: RequestInit): Promise<T>` (Used by the `birthdays_today` tool)
-- Fetches and parses JSON data from the API
-- Handles error cases and content type validation
-- Used for structured data endpoints
-
-### 2. `fetchHtml(path: string, options?: RequestInit): Promise<string>` (Used by the `get_document_details` tool)
-- Retrieves HTML content from the API
-- Used for document pages, MP profiles, and other HTML-based content
-
-### 3. `fetchBinary(path: string, options?: RequestInit): Promise<{ data: ArrayBuffer, contentType: string }>` (Used by the `get_photo` tool)
-- Downloads binary data such as PDFs and images
-- Returns both the data and content type for proper handling
-
-### 4. `search<T>(query: string, options?: { twomonths?: boolean, soorten?: string }): Promise<T>` (Used by the `search_tk` and `search_tk_filtered` tools)
-- Performs searches across parliamentary data
-- Supports complex queries with quotes, NOT operators, etc.
-- Includes fallback mechanisms for handling API errors
-
-### 5. `resolveExternal(extId: string): Promise<string>` (API method, not exposed as a tool)
-- Resolves external reference IDs to direct URLs
-- Tries multiple approaches to find the correct URL
-
-### 6. `fetchSitemap(path: string): Promise<string[]>` (API method, not exposed as a tool)
-- Retrieves lists of URLs for specific time periods
-- Supports yearly, half-yearly, and monthly sitemaps
-
-### 7. `getPersons(): Promise<any[]>` (Used by the `list_persons` tool)
-- Fetches a list of all current Members of Parliament
-- Extracts structured data from HTML responses
-
-### 8. `getPerson(id: number): Promise<any | null>` (API method, not exposed as a tool)
-- Retrieves detailed information about a specific MP
-- Parses HTML to extract structured data
-
 ## MCP Tools
 
 The MCP server currently exposes the following tools to AI assistants:
@@ -182,14 +123,6 @@ The API service includes robust error handling:
 - Fallback to simplified queries when complex ones fail
 - Detailed error messages for debugging
 - Proper logging to stderr (not stdout, which would break the stdio transport)
-
-## Testing
-
-The project includes comprehensive tests:
-- Unit tests for API service methods
-- Integration tests for actual endpoints
-- Tests for complex search queries
-- Tests for error handling
 
 ## Conclusion
 
