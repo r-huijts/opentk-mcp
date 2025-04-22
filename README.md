@@ -1,54 +1,5 @@
 # OpenTK Model Context Protocol Server
 
-A bridge between large language models (LLMs) and Dutch parliamentary data through a standardized interface. This MCP server provides access to Dutch parliamentary documents, debates, and member information from the Tweede Kamer.
-
-## Features
-
-- Comprehensive search across parliamentary data with complex queries
-- Access to document metadata with clickable links
-- MP information retrieval with photo support
-- Structured data in JSON format for easy parsing
-
-## Usage
-
-The OpenTK MCP server exposes a set of tools to AI assistants:
-
-### Search Tools
-- `search_tk` - Search across all parliamentary data with pagination and formatting options
-- `search_tk_filtered` - Search filtered by document type
-
-### Document Tools
-- `get_document_details` - Get metadata about a document including links
-- `get_document_links` - Convert document URLs into clickable links
-
-### MP Information
-- `get_photo` - Retrieve an MP's official portrait photograph
-- `list_persons` - List all current Members of Parliament
-
-### Other Tools
-- `birthdays_today` - Lists all MPs celebrating their birthday today
-
-## Installation
-
-```bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Start the server
-npm start
-```
-
-## Configuration
-
-The server connects to Bert Hubert's tkconv service as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs.
-
-## License
-
-MIT
-
 ## Real-World Natural Language Interaction Examples
 
 ### Example 1: Researching Parliamentary Discussions on Climate Policy
