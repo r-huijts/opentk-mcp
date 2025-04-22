@@ -4,7 +4,13 @@ import { z } from "zod";
 import { apiService } from "./services/api.js";
 import { extractDocumentLink } from "./utils/html-parser.js";
 import { BASE_URL } from './config.js';
-import { extractDocumentDetailsFromHtml } from './utils/html-parser.js';
+import {
+  extractDocumentDetailsFromHtml,
+  extractCommitteesFromHtml,
+  extractCommitteeDetailsFromHtml,
+  extractActivitiesFromHtml,
+  extractVotingResultsFromHtml
+} from './utils/html-parser.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
@@ -389,6 +395,286 @@ mcp.tool(
         text: links.join("\n")
       }]
     };
+  }
+);
+
+/** Get committees */
+mcp.tool(
+  "get_committees",
+  "Retrieves a list of all parliamentary committees with their IDs, names, and URLs. Committees are specialized groups of MPs that focus on specific policy areas like defense, healthcare, or finance. Use this tool to get an overview of all active committees in the Dutch Parliament.",
+  {},
+  async () => {
+    try {
+      const html = await apiService.fetchHtml("/commissies.html");
+      const committees = extractCommitteesFromHtml(html, BASE_URL);
+
+      if (committees.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: "No committees found or there was an error retrieving the committee list. Please try again later."
+          }]
+        };
+      }
+
+      return { content: [{ type: "text", text: JSON.stringify(committees, null, 2) }] };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error fetching committees: ${error.message || 'Unknown error'}`
+        }]
+      };
+    }
+  }
+);
+
+/** Get committee details */
+mcp.tool(
+  "get_committee_details",
+  "Retrieves detailed information about a specific parliamentary committee, including its members, recent activities, and description. This provides deeper insight into the committee's composition, leadership roles, and recent work. Use this when you need comprehensive information about a particular committee's structure and activities.",
+  {
+    committeeId: z.string().describe("Committee ID - the unique identifier for the parliamentary committee you want information about")
+  },
+  async ({ committeeId }) => {
+    try {
+      const html = await apiService.fetchHtml(`/commissie.html?id=${encodeURIComponent(committeeId)}`);
+      const committeeDetails = extractCommitteeDetailsFromHtml(html, BASE_URL, committeeId);
+
+      if (!committeeDetails) {
+        // If we couldn't extract details from the HTML, return a simplified response with just the name and ID
+        const titleRegex = /<title>([^<]+)<\/title>/i;
+        const titleMatch = html.match(titleRegex);
+        const name = titleMatch?.[1]?.trim() || "Unknown Committee";
+
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              id: committeeId,
+              name: name,
+              url: `${BASE_URL}/commissie.html?id=${encodeURIComponent(committeeId)}`,
+              note: "This committee uses dynamic content rendering. Only basic information is available."
+            }, null, 2)
+          }]
+        };
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify(committeeDetails, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: `Error fetching committee details: ${error.message || 'Unknown error'}`
+          })
+        }]
+      };
+    }
+  }
+);
+
+/** Get upcoming activities */
+mcp.tool(
+  "get_upcoming_activities",
+  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. Each activity includes details like date, time, location, and type. This tool is ideal for tracking the parliamentary agenda and identifying opportunities to follow specific discussions or decisions.",
+  {
+    limit: z.number().optional().describe("Maximum number of activities to return (default: 20, max: 100)")
+  },
+  async ({ limit = 20 }) => {
+    try {
+      // Validate and cap the limit
+      const validatedLimit = Math.min(Math.max(1, limit), 100);
+
+      const html = await apiService.fetchHtml("/activiteiten.html");
+      const activities = extractActivitiesFromHtml(html, BASE_URL);
+
+      if (activities.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: "No upcoming activities found or there was an error retrieving the activities list. Please try again later."
+          }]
+        };
+      }
+
+      // Sort activities by date (most recent first) and limit the results
+      const sortedActivities = [...activities].sort((a, b) => {
+        const dateA = new Date(a.date + (a.time ? ` ${a.time}` : ''));
+        const dateB = new Date(b.date + (b.time ? ` ${b.time}` : ''));
+        return dateA.getTime() - dateB.getTime(); // Ascending order (upcoming first)
+      }).slice(0, validatedLimit);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            total: activities.length,
+            limit: validatedLimit,
+            activities: sortedActivities
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error fetching upcoming activities: ${error.message || 'Unknown error'}`
+        }]
+      };
+    }
+  }
+);
+
+/** Get voting results */
+mcp.tool(
+  "get_voting_results",
+  "Retrieves recent voting results on parliamentary motions and bills. Each result includes the title of the motion/bill, the date of the vote, and whether it was accepted or rejected. This tool is valuable for tracking the outcome of parliamentary decisions and understanding which proposals have been approved or rejected.",
+  {
+    limit: z.number().optional().describe("Maximum number of voting results to return (default: 20, max: 100)")
+  },
+  async ({ limit = 20 }) => {
+    try {
+      // Validate and cap the limit
+      const validatedLimit = Math.min(Math.max(1, limit), 100);
+
+      const html = await apiService.fetchHtml("/stemmingen.html");
+      const votingResults = extractVotingResultsFromHtml(html, BASE_URL);
+
+      if (votingResults.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: "No voting results found or there was an error retrieving the voting results list. Please try again later."
+          }]
+        };
+      }
+
+      // Sort voting results by date (most recent first) and limit the results
+      const sortedResults = [...votingResults].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+      }).slice(0, validatedLimit);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            total: votingResults.length,
+            limit: validatedLimit,
+            results: sortedResults
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error fetching voting results: ${error.message || 'Unknown error'}`
+        }]
+      };
+    }
+  }
+);
+
+/** Search documents by category */
+mcp.tool(
+  "search_by_category",
+  "Performs a search specifically for documents of a certain category, such as questions, motions, or letters. This allows for more targeted searches when you're looking for a specific type of parliamentary document. The search syntax is the same as the general search: 'Joe Biden' finds documents with both terms anywhere, '\"Joe Biden\"' finds exact phrases, and 'Hubert NOT Bruls' finds documents with the first term but not the second.",
+  {
+    query: z.string().describe("Search term - any keyword, name, policy area, or quote you want to find in parliamentary records"),
+    category: z.enum(["vragen", "moties", "alles"]).describe("Document category: 'vragen' for questions, 'moties' for motions, 'alles' for all document types"),
+    page: z.number().optional().describe("Page number for paginated results (default: 1)"),
+    limit: z.number().optional().describe("Maximum number of results to return per page (default: 20, max: 100)")
+  },
+  async ({ query, category, page = 1, limit = 20 }) => {
+    try {
+      // Validate and cap the limit
+      const validatedLimit = Math.min(Math.max(1, limit), 100);
+      const validatedPage = Math.max(1, page);
+
+      const data = await apiService.search<{ results: any[], error?: string }>(query, { soorten: category });
+
+      // Check if there's an error message in the response
+      if (data.error) {
+        return {
+          content: [
+            { type: "text", text: data.error },
+            { type: "text", text: JSON.stringify(data.results || [], null, 2) }
+          ]
+        };
+      }
+
+      // If no results were found
+      if (!data.results || data.results.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: `No results found for query: ${query} with category: ${category}. Try using different keywords or a different category.`
+          }]
+        };
+      }
+
+      // Sort results by date (most recent first)
+      const sortedResults = [...data.results].sort((a, b) => {
+        // Parse dates from the 'datum' field (format: YYYY-MM-DDT00:00:00)
+        const dateA = new Date(a.datum);
+        const dateB = new Date(b.datum);
+        return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+      });
+
+      // Calculate pagination
+      const totalResults = sortedResults.length;
+      const totalPages = Math.ceil(totalResults / validatedLimit);
+      const startIndex = (validatedPage - 1) * validatedLimit;
+      const endIndex = Math.min(startIndex + validatedLimit, totalResults);
+      const paginatedResults = sortedResults.slice(startIndex, endIndex);
+
+      // Create pagination info
+      const paginationInfo = {
+        query,
+        category,
+        totalResults,
+        page: validatedPage,
+        limit: validatedLimit,
+        totalPages,
+        hasNextPage: validatedPage < totalPages,
+        hasPreviousPage: validatedPage > 1
+      };
+
+      // Create a summary version with only essential fields
+      const formattedResults = paginatedResults.map(item => ({
+        id: item.id,
+        title: item.title,
+        category: item.category,
+        datum: item.datum,
+        url: item.url
+      }));
+
+      // Return the paginated results with pagination info
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            pagination: paginationInfo,
+            results: formattedResults
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error searching by category: ${error.message || 'Unknown error'}`
+        }]
+      };
+    }
   }
 );
 

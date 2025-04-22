@@ -39,7 +39,7 @@ The documents show that the government is proposing a 60% reduction in emissions
 **User Query:** "What are the most recent parliamentary documents about housing legislation?"
 
 **AI Assistant Process:**
-1. Uses `search_tk_filtered` with type "Document" and query "woningwet"
+1. Uses `search_by_category` with category "alles" and query "woningwet"
 2. Sorts results by date to focus on recent entries
 3. Uses `get_document_details` to retrieve metadata for the most relevant documents
 4. Provides clickable links with `get_document_links`
@@ -71,6 +71,31 @@ Here are their official parliamentary portraits: [Images]
 
 Would you like me to find more information about either of these MPs?"
 
+### Example 5: Finding Upcoming Parliamentary Activities
+
+**User Query:** "What parliamentary activities are scheduled for next week?"
+
+**AI Assistant Process:**
+1. Uses `get_upcoming_activities` to retrieve scheduled parliamentary activities
+2. Filters and organizes activities by date
+
+**Response Example:**
+"Here are the key parliamentary activities scheduled for next week:
+
+**Monday, April 28, 2025:**
+- 10:00 AM: Committee meeting on Climate Policy (Thorbeckezaal)
+- 2:00 PM: Plenary debate on the Spring Budget (Plenaire zaal)
+
+**Tuesday, April 29, 2025:**
+- 9:30 AM: Technical briefing on Digital Security (Troelstrazaal)
+- 1:00 PM: Committee meeting on Healthcare Reform (Groen van Prinstererzaal)
+
+**Wednesday, April 30, 2025:**
+- 10:00 AM: Plenary debate on Housing Crisis (Plenaire zaal)
+- 3:00 PM: Roundtable discussion with experts on Energy Transition (Thorbeckezaal)
+
+Would you like more details about any of these activities?"
+
 ## Project Concept
 
 The OpenTK project is a Model Context Protocol (MCP) server that provides access to Dutch parliamentary data through a standardized interface. It serves as a bridge between large language models (LLMs) and the Dutch Parliament's information systems, allowing AI assistants to search, retrieve, and analyze parliamentary documents, debates, and member information.
@@ -97,13 +122,19 @@ The MCP server currently exposes the following tools to AI assistants:
 ### Search Tools
 4. `search_tk` - Comprehensive search across all parliamentary data
 5. `search_tk_filtered` - Search filtered by document type (Document, Activiteit, Zaak)
+6. `search_by_category` - Search specifically for documents of a certain category (questions, motions, etc.)
 
 ### Document Tools
-6. `get_document_details` - Retrieves metadata about a parliamentary document
-7. `get_document_links` - Converts document URLs into clickable links
+7. `get_document_details` - Retrieves metadata about a parliamentary document
+8. `get_document_links` - Converts document URLs into clickable links
 
-### Note on Available Tools
-The current implementation includes 7 tools, which is a subset of the tools that were originally planned or available in previous versions. Some API methods (like `resolveExternal`, `fetchSitemap`, and `getPerson`) are implemented in the codebase but not exposed as tools in the current version.
+### Committee Tools
+9. `get_committees` - Retrieves a list of all parliamentary committees
+10. `get_committee_details` - Retrieves detailed information about a specific committee
+
+### Activity and Voting Tools
+11. `get_upcoming_activities` - Retrieves a list of upcoming parliamentary activities
+12. `get_voting_results` - Retrieves recent voting results on parliamentary motions and bills
 
 ## Search Functionality
 
