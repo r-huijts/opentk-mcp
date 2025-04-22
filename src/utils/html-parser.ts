@@ -62,7 +62,7 @@ export function extractDocumentDetailsFromHtml(html: string, baseUrl: string): D
   const directLinkMatch = html.match(/<a href="(getraw\/[^"']+)">Directe link naar document<\/a>/i);
   if (directLinkMatch && directLinkMatch[1]) {
     // Resolve relative URL
-    details.directLinkPdf = new URL(directLinkMatch[1], baseUrl).href;
+    details.directLinkPdf = new URL(directLinkMatch[1], baseUrl + '/tkconv/').href;
   }
   details.tweedekamerLink = extractValue(html, /<a href="(https:\/\/www\.tweedekamer\.nl\/[^"']+)">link naar pagina op de Tweede Kamer site<\/a>/i);
 
