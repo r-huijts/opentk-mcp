@@ -11,8 +11,7 @@ import {
   extractActivitiesFromHtml,
   extractVotingResultsFromHtml
 } from './utils/html-parser.js';
-import { extractTextFromPdf, summarizeText } from './utils/pdf-extractor.js';
-import { extractTextFromDocx } from './utils/docx-extractor.js';
+import { extractTextFromPdf, extractTextFromDocx, summarizeText } from './utils/document-extractor.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
@@ -703,7 +702,7 @@ mcp.tool(
 /** Get document content */
 mcp.tool(
   "get_document_content",
-  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from PDF or Word (DOCX) documents and returned in a readable format. Use this when you need to analyze or discuss the specific content of a document rather than just its metadata.",
+  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from PDF or Word (DOCX) documents using professional libraries and returned in a readable format. Use this when you need to analyze or discuss the specific content of a document rather than just its metadata.",
   {
     docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from")
   },
@@ -738,11 +737,11 @@ mcp.tool(
       let documentType = '';
 
       if (contentType.includes('pdf')) {
-        // Handle PDF documents
+        // Handle PDF documents using pdf-parse library
         extractedText = await extractTextFromPdf(data);
         documentType = 'PDF';
       } else if (contentType.includes('wordprocessingml.document') || contentType.includes('msword') || documentLink.endsWith('.docx') || documentLink.endsWith('.doc')) {
-        // Handle Word documents (DOCX/DOC)
+        // Handle Word documents (DOCX/DOC) using mammoth library
         extractedText = await extractTextFromDocx(data);
         documentType = 'Word';
       } else {
@@ -752,7 +751,8 @@ mcp.tool(
             type: "text",
             text: JSON.stringify({
               error: `Unsupported document type (content type: ${contentType})`,
-              suggestion: "This tool currently only supports PDF and Word (DOCX) documents."
+              suggestion: "This tool currently only supports PDF and Word (DOCX) documents.",
+              documentLink: details?.directLinkPdf || null
             }, null, 2)
           }]
         };
@@ -780,12 +780,15 @@ mcp.tool(
         }]
       };
     } catch (error: any) {
+      console.error(`Error in get_document_content: ${error.message}`);
+      console.error(error.stack);
       return {
         content: [{
           type: "text",
           text: JSON.stringify({
             error: `Error extracting document content: ${error.message || 'Unknown error'}`,
-            suggestion: "Try using get_document_details to verify the document exists and is accessible."
+            suggestion: "Try using get_document_details to verify the document exists and is accessible.",
+            documentLink: `${BASE_URL}/tkconv/document.html?nummer=${encodeURIComponent(docId)}`
           }, null, 2)
         }]
       };
