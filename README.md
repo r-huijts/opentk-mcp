@@ -139,3 +139,49 @@ MIT
 ## Conclusion
 
 The OpenTK MCP server provides a robust and well-structured interface to Dutch parliamentary data, making it accessible to AI assistants through the Model Context Protocol. Its modular design, comprehensive API, and thorough testing ensure reliable access to parliamentary information for AI-assisted research, analysis, and information retrieval.
+
+## Installation
+
+### 1. From Source
+
+**Clone Repository:**
+```bash
+git clone https://github.com/r-huijts/opentk-mcp.git
+cd opentk-mcp
+```
+
+**Install Dependencies:**
+```bash
+npm install
+```
+
+**Build the Project:**
+```bash
+npm run build
+```
+
+**Start the Server:**
+```bash
+npm start
+```
+
+### 2. Configure Claude Desktop
+
+Update your Claude configuration file:
+
+```json
+{
+  "mcpServers": {
+    "opentk-mcp-local": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/your/opentk-mcp/dist/index.js"
+      ]
+    }
+  }
+}
+```
+
+Make sure to replace `/absolute/path/to/your/opentk-mcp/` with the actual path to your installation.
+
+Once configured, Claude will be able to access Dutch parliamentary data through the OpenTK MCP server. The server exposes all the tools described in the [Usage](#usage) section above.
