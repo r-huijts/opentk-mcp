@@ -11,6 +11,7 @@ import {
   extractActivitiesFromHtml,
   extractVotingResultsFromHtml
 } from './utils/html-parser.js';
+import { extractTextFromPdf, summarizeText } from './utils/pdf-extractor.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
@@ -692,6 +693,89 @@ mcp.tool(
         content: [{
           type: "text",
           text: `Error searching by category: ${error.message || 'Unknown error'}`
+        }]
+      };
+    }
+  }
+);
+
+/** Get document content */
+mcp.tool(
+  "get_document_content",
+  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from the PDF and returned in a readable format. Use this when you need to analyze or discuss the specific content of a document rather than just its metadata.",
+  {
+    docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from")
+  },
+  async ({ docId }) => {
+    try {
+      // First try to get the document page to extract the link
+      const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
+
+      // Get document details for metadata
+      const details = extractDocumentDetailsFromHtml(html, BASE_URL);
+
+      // Extract the document link
+      const documentLink = extractDocumentLink(html);
+
+      if (!documentLink) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Could not find document link for document ${docId}`,
+              suggestion: "Try using get_document_details to verify the document ID is correct."
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Download the document
+      const { data, contentType } = await apiService.fetchBinary(`/${documentLink}`);
+
+      // Check if it's a PDF
+      if (!contentType.includes('pdf')) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document is not a PDF (content type: ${contentType})`,
+              suggestion: "This tool currently only supports PDF documents."
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Extract text from the PDF
+      const extractedText = await extractTextFromPdf(data);
+
+      // Summarize the text if it's too long
+      const summarizedText = summarizeText(extractedText);
+
+      // Return the document content along with metadata
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            docId,
+            title: details?.title || "Unknown title",
+            type: details?.type || "Unknown type",
+            date: details?.datum || "Unknown date",
+            content: summarizedText,
+            note: summarizedText.length < extractedText.length ?
+              "The document content has been truncated due to length. Use the PDF link to view the full document." :
+              "Full document content extracted successfully.",
+            pdfLink: details?.directLinkPdf || null
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: `Error extracting document content: ${error.message || 'Unknown error'}`,
+            suggestion: "Try using get_document_details to verify the document exists and is accessible."
+          }, null, 2)
         }]
       };
     }
