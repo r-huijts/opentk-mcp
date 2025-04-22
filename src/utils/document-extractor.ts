@@ -3,7 +3,8 @@
  * Using established libraries for better reliability
  */
 
-import * as pdfParse from 'pdf-parse';
+// Using require for pdf-parse due to CommonJS module compatibility
+const pdfParse = require('pdf-parse');
 import * as mammoth from 'mammoth';
 
 /**
@@ -15,20 +16,20 @@ export async function extractTextFromPdf(data: ArrayBuffer): Promise<string> {
   try {
     // Convert ArrayBuffer to Buffer for pdf-parse
     const buffer = Buffer.from(data);
-    
+
     // Parse the PDF
     const result = await pdfParse(buffer);
-    
+
     // Get the text content
     let extractedText = result.text || '';
-    
+
     // Clean up the text
     extractedText = extractedText.replace(/\s+/g, ' ').trim();
-    
+
     if (!extractedText || extractedText.length < 50) {
       return 'The document appears to be a PDF file, but no readable text content could be extracted. This might be due to the document structure, content format, or encryption. Please download the original document for full content.';
     }
-    
+
     return extractedText;
   } catch (error) {
     console.error(`Error extracting text from PDF: ${(error as Error).message}`);
@@ -45,20 +46,20 @@ export async function extractTextFromDocx(data: ArrayBuffer): Promise<string> {
   try {
     // Convert ArrayBuffer to Buffer for mammoth
     const buffer = Buffer.from(data);
-    
+
     // Extract text from the DOCX
     const result = await mammoth.extractRawText({ buffer });
-    
+
     // Get the text content
     let extractedText = result.value || '';
-    
+
     // Clean up the text
     extractedText = extractedText.replace(/\s+/g, ' ').trim();
-    
+
     if (!extractedText || extractedText.length < 50) {
       return 'The document appears to be a Word file, but no readable text content could be extracted. This might be due to the document structure or content format. Please download the original document for full content.';
     }
-    
+
     return extractedText;
   } catch (error) {
     console.error(`Error extracting text from DOCX: ${(error as Error).message}`);
@@ -76,7 +77,7 @@ export function summarizeText(text: string, maxLength: number = 8000): string {
   if (text.length <= maxLength) {
     return text;
   }
-  
+
   // Simple approach: Take the first part of the text up to maxLength
   // and add an ellipsis to indicate truncation
   return text.substring(0, maxLength) + '... [Text truncated due to length]';
