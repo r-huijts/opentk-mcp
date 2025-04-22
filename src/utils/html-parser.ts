@@ -69,7 +69,14 @@ const extractValue = (html: string, regex: RegExp, group: number = 1): string | 
 
 export function extractDocumentLink(html: string): string | null {
   const match = html.match(/<a href="([^"]+)"[^>]*>Directe link naar document<\/a>/i);
-  return match?.[1] || null;
+  if (match && match[1]) {
+    // Make sure the link starts with 'tkconv/getraw' or 'getraw'
+    const link = match[1];
+    if (link.startsWith('getraw/')) {
+      return link; // Return as is, will be resolved with baseUrl
+    }
+  }
+  return null;
 }
 
 export function extractDocumentDetailsFromHtml(html: string, baseUrl: string): DocumentDetails | null {
@@ -105,8 +112,18 @@ export function extractDocumentDetailsFromHtml(html: string, baseUrl: string): D
   // Extract links
   const directLinkMatch = html.match(/<a href="(getraw\/[^"']+)">Directe link naar document<\/a>/i);
   if (directLinkMatch && directLinkMatch[1]) {
-    // Resolve relative URL
-    details.directLinkPdf = new URL(directLinkMatch[1], baseUrl).href;
+    // Ensure the URL includes the /tkconv/ path
+    const rawPath = directLinkMatch[1];
+    // If baseUrl already includes /tkconv/, this will work correctly
+    // If not, we need to add it manually
+    if (baseUrl.endsWith('/tkconv')) {
+      details.directLinkPdf = `${baseUrl}/${rawPath}`;
+    } else if (baseUrl.includes('/tkconv/')) {
+      details.directLinkPdf = new URL(rawPath, baseUrl).href;
+    } else {
+      // Ensure we have /tkconv/ in the path
+      details.directLinkPdf = `${baseUrl}/tkconv/${rawPath}`;
+    }
   }
   details.tweedekamerLink = extractValue(html, /<a href="(https:\/\/www\.tweedekamer\.nl\/[^"']+)">link naar pagina op de Tweede Kamer site<\/a>/i);
 
