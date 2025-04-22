@@ -12,6 +12,7 @@ import {
   extractVotingResultsFromHtml
 } from './utils/html-parser.js';
 import { extractTextFromPdf, summarizeText } from './utils/pdf-extractor.js';
+import { extractTextFromDocx } from './utils/docx-extractor.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
@@ -702,7 +703,7 @@ mcp.tool(
 /** Get document content */
 mcp.tool(
   "get_document_content",
-  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from the PDF and returned in a readable format. Use this when you need to analyze or discuss the specific content of a document rather than just its metadata.",
+  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from PDF or Word (DOCX) documents and returned in a readable format. Use this when you need to analyze or discuss the specific content of a document rather than just its metadata.",
   {
     docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from")
   },
@@ -732,21 +733,30 @@ mcp.tool(
       // Download the document
       const { data, contentType } = await apiService.fetchBinary(`/${documentLink}`);
 
-      // Check if it's a PDF
-      if (!contentType.includes('pdf')) {
+      // Extract text based on document type
+      let extractedText = '';
+      let documentType = '';
+
+      if (contentType.includes('pdf')) {
+        // Handle PDF documents
+        extractedText = await extractTextFromPdf(data);
+        documentType = 'PDF';
+      } else if (contentType.includes('wordprocessingml.document') || contentType.includes('msword') || documentLink.endsWith('.docx') || documentLink.endsWith('.doc')) {
+        // Handle Word documents (DOCX/DOC)
+        extractedText = await extractTextFromDocx(data);
+        documentType = 'Word';
+      } else {
+        // Unsupported document type
         return {
           content: [{
             type: "text",
             text: JSON.stringify({
-              error: `Document is not a PDF (content type: ${contentType})`,
-              suggestion: "This tool currently only supports PDF documents."
+              error: `Unsupported document type (content type: ${contentType})`,
+              suggestion: "This tool currently only supports PDF and Word (DOCX) documents."
             }, null, 2)
           }]
         };
       }
-
-      // Extract text from the PDF
-      const extractedText = await extractTextFromPdf(data);
 
       // Summarize the text if it's too long
       const summarizedText = summarizeText(extractedText);
@@ -760,11 +770,12 @@ mcp.tool(
             title: details?.title || "Unknown title",
             type: details?.type || "Unknown type",
             date: details?.datum || "Unknown date",
+            documentFormat: documentType,
             content: summarizedText,
             note: summarizedText.length < extractedText.length ?
-              "The document content has been truncated due to length. Use the PDF link to view the full document." :
-              "Full document content extracted successfully.",
-            pdfLink: details?.directLinkPdf || null
+              `The document content has been truncated due to length. Use the document link to view the full ${documentType} document.` :
+              `Full document content extracted successfully from ${documentType} document.`,
+            documentLink: details?.directLinkPdf || null
           }, null, 2)
         }]
       };
