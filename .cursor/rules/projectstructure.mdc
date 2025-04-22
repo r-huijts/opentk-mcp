@@ -1,0 +1,142 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# OpenTK Model Context Protocol Server
+
+## Project Concept
+
+The OpenTK project is a Model Context Protocol (MCP) server that provides access to Dutch parliamentary data through a standardized interface. It serves as a bridge between large language models (LLMs) and the Dutch Parliament's information systems, allowing AI assistants to search, retrieve, and analyze parliamentary documents, debates, and member information.
+
+The server uses the `@modelcontextprotocol/sdk` to implement the MCP specification, which enables structured communication between AI models and external data sources. By exposing parliamentary data through well-defined tools and endpoints, OpenTK makes it possible for AI assistants to:
+
+1. Search for parliamentary documents using complex queries
+2. Access information about Members of Parliament
+3. Retrieve official documents in various formats
+4. Analyze parliamentary activities and proceedings
+5. Track legislative cases and government pledges
+
+The project leverages Bert Hubert's tkconv service as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs.
+
+## Project Structure
+
+The project follows a modular structure:
+
+```
+opentk-mcp/
+├── src/
+│   ├── index.ts                # Main entry point and MCP tool definitions
+│   ├── config.ts               # Configuration settings
+│   ├── services/
+│   │   └── api.ts              # Core API service for data fetching
+│   ├── utils/
+│   │   └── html-parser.js      # Utilities for parsing HTML responses
+│   └── __tests__/              # Test files
+│       ├── api-service.test.ts # Tests for API service
+│       └── endpoint-integration.test.ts # Integration tests
+├── dist/                       # Compiled JavaScript output
+├── package.json                # Project dependencies and scripts
+└── tsconfig.json               # TypeScript configuration
+```
+
+## API Service Endpoints
+
+The `ApiService` class in `src/services/api.ts` provides the core functionality for interacting with the tkconv API. Here are the key methods:
+
+### 1. `fetchJson<T>(path: string, options?: RequestInit): Promise<T>`
+- Fetches and parses JSON data from the API
+- Handles error cases and content type validation
+- Used for structured data endpoints
+
+### 2. `fetchHtml(path: string, options?: RequestInit): Promise<string>`
+- Retrieves HTML content from the API
+- Used for document pages, MP profiles, and other HTML-based content
+
+### 3. `fetchBinary(path: string, options?: RequestInit): Promise<{ data: ArrayBuffer, contentType: string }>`
+- Downloads binary data such as PDFs and images
+- Returns both the data and content type for proper handling
+
+### 4. `search<T>(query: string, options?: { twomonths?: boolean, soorten?: string }): Promise<T>`
+- Performs searches across parliamentary data
+- Supports complex queries with quotes, NOT operators, etc.
+- Includes fallback mechanisms for handling API errors
+
+### 5. `resolveExternal(extId: string): Promise<string>`
+- Resolves external reference IDs to direct URLs
+- Tries multiple approaches to find the correct URL
+
+### 6. `fetchSitemap(path: string): Promise<string[]>`
+- Retrieves lists of URLs for specific time periods
+- Supports yearly, half-yearly, and monthly sitemaps
+
+### 7. `getPersons(): Promise<any[]>`
+- Fetches a list of all current Members of Parliament
+- Extracts structured data from HTML responses
+
+### 8. `getPerson(id: number): Promise<any | null>`
+- Retrieves detailed information about a specific MP
+- Parses HTML to extract structured data
+
+## MCP Tools
+
+The MCP server exposes the following tools to AI assistants:
+
+### Search Tools
+1. `search_tk` - Comprehensive search across all parliamentary data
+2. `search_tk_filtered` - Search filtered by document type (Document, Activiteit, Zaak)
+
+### Document Tools
+3. `get_document_html` - Retrieves document content in HTML format
+4. `download_document` - Downloads the actual document file (usually PDF)
+5. `get_document_metadata` - Retrieves metadata about a document
+
+### MP Information Tools
+6. `get_mp_list` - Lists all current Members of Parliament
+7. `get_mp_details` - Retrieves detailed information about a specific MP
+8. `get_photo` - Retrieves an MP's official portrait photograph
+
+### Navigation Tools
+9. `get_sitemap_year` - Provides a list of all parliamentary content URLs for a specific year
+10. `get_sitemap_half_year` - URLs for a half-year period
+11. `get_sitemap_month` - URLs for a specific month
+12. `resolve_external` - Converts parliamentary reference IDs into direct URLs
+
+### Specialized Content Tools
+13. `get_toezegging` - Information about government pledges
+14. `get_case` - Details about parliamentary cases
+
+## Search Functionality
+
+The search functionality is particularly sophisticated, supporting:
+
+- Simple keyword searches: `kunstmatige intelligentie`
+- Exact phrase searches: `"kunstmatige intelligentie"`
+- Exclusion searches: `Hubert NOT Bruls`
+- Boolean operators: `OR`, `NEAR()`
+
+The implementation handles various edge cases:
+- Preserves quotes in search queries
+- Uses proper content type headers
+- Implements fallback mechanisms for API errors
+- Provides meaningful error messages
+
+## Error Handling
+
+The API service includes robust error handling:
+- Graceful handling of API errors (4xx, 5xx)
+- Fallback to simplified queries when complex ones fail
+- Detailed error messages for debugging
+- Proper logging to stderr (not stdout, which would break the stdio transport)
+
+## Testing
+
+The project includes comprehensive tests:
+- Unit tests for API service methods
+- Integration tests for actual endpoints
+- Tests for complex search queries
+- Tests for error handling
+
+## Conclusion
+
+The OpenTK MCP server provides a robust and well-structured interface to Dutch parliamentary data, making it accessible to AI assistants through the Model Context Protocol. Its modular design, comprehensive API, and thorough testing ensure reliable access to parliamentary information for AI-assisted research, analysis, and information retrieval.

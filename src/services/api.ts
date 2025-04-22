@@ -134,17 +134,19 @@ export class ApiService {
     try {
       // Don't sanitize quotes as they're important for exact phrase searches
       // Only sanitize backslashes which could cause issues
-      const sanitizedQuery = query.replace(/[\\]/g, ' ').trim();
+      const sanitizedQuery = query.replace(/\\/g, ' ').trim();
 
-      // Create a simple string for the form data (the API expects application/x-www-form-urlencoded)
-      const formData = `q=${encodeURIComponent(sanitizedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || ""}`;
-
+      // Use FormData for multipart/form-data
+      const formData = new FormData();
+      formData.append('q', sanitizedQuery);
+      formData.append('twomonths', options.twomonths ? "true" : "false");
+      formData.append('soorten', options.soorten || "alles"); // Default to 'alles'
 
       const res = await fetch(`${BASE_URL}/search`, {
         method: "POST",
         headers: {
+          // Remove explicit Content-Type, fetch will set it for FormData
           'Accept': '*/*',
-          'Content-Type': 'application/x-www-form-urlencoded',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
           'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(sanitizedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || "alles"}`,
           'Origin': BASE_URL,
@@ -157,71 +159,99 @@ export class ApiService {
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"'
         },
-        body: formData,
-        // We would add timeout here, but it's not supported in the RequestInit type
+        body: formData, // Pass FormData object directly
       });
 
       if (!res.ok) {
         // If we get a 500 error, try to use a simplified query instead
         if (res.status === 500) {
-          // API returned 500 error
+          // API returned 500 error - let's investigate before simplifying
+          let actualErrorContent = await res.text().catch(() => "Could not read error response body");
+          let errorMessage = `Initial request failed with 500: ${res.statusText}. Response: ${actualErrorContent.substring(0, 200)}...`; // Limit length
+          console.error(errorMessage); // Log the initial error details
 
-          // Try to simplify the query by taking just the first term
-          const simplifiedQuery = sanitizedQuery.split(/\s+/)[0];
+          // Optional: Try simplifying only if the error content suggests it,
+          // otherwise, maybe just report the initial 500 error.
+          // For now, we'll still try simplifying but provide better final message.
 
-          // Initialize error message
-          let errorMessage = "Unknown error";
+          const simplifiedQuery = sanitizedQuery.split(/\\s+/)[0];
+
+          // Initialize retry error message
+          let retryErrorMessage = "Simplification/Retry not attempted or failed.";
 
           if (simplifiedQuery && simplifiedQuery !== sanitizedQuery) {
             // Retry with simplified query
+            console.error(`Retrying search with simplified query: '${simplifiedQuery}'`);
+            
+            // Use FormData for the retry as well
+            const simplifiedFormData = new FormData();
+            simplifiedFormData.append('q', simplifiedQuery);
+            simplifiedFormData.append('twomonths', options.twomonths ? "true" : "false");
+            simplifiedFormData.append('soorten', options.soorten || "alles"); // Default to 'alles'
 
-            // Create a simple string for the form data with the simplified query
-            const simplifiedForm = `q=${encodeURIComponent(simplifiedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || ""}`;
+            try {
+              const retryRes = await fetch(`${BASE_URL}/search`, {
+                method: "POST",
+                headers: { // Use same headers as initial, without Content-Type
+                  'Accept': '*/*',
+                  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+                  'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(simplifiedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || "alles"}`,
+                  'Origin': BASE_URL,
+                  'Host': 'berthub.eu',
+                  'Connection': 'keep-alive',
+                  'Sec-Fetch-Dest': 'empty',
+                  'Sec-Fetch-Mode': 'cors',
+                  'Sec-Fetch-Site': 'same-origin',
+                  'sec-ch-ua': '"Chromium";v="135", "Not-A.Brand";v="8"',
+                  'sec-ch-ua-mobile': '?0',
+                  'sec-ch-ua-platform': '"macOS"'
+                },
+                body: simplifiedFormData // Pass FormData object
+              });
 
-
-            const retryRes = await fetch(`${BASE_URL}/search`, {
-              method: "POST",
-              headers: {
-                'Accept': '*/*',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-                'Referer': `${BASE_URL}/search.html?q=${encodeURIComponent(simplifiedQuery)}&twomonths=${options.twomonths ? "true" : "false"}&soorten=${options.soorten || "alles"}`,
-                'Origin': BASE_URL,
-                'Host': 'berthub.eu',
-                'Connection': 'keep-alive',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'sec-ch-ua': '"Chromium";v="135", "Not-A.Brand";v="8"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"macOS"'
-              },
-              body: simplifiedForm
-            });
-
-            if (retryRes.ok) {
-              const retryText = await retryRes.text();
-              try {
-                const retryData = JSON.parse(retryText);
-                return retryData as T;
-              } catch (e) {
-                // If parsing fails, capture the error message
-                errorMessage = e instanceof Error ? e.message : String(e);
-                console.error(`Failed to parse JSON from retry: ${errorMessage}`);
+              if (retryRes.ok) {
+                const retryText = await retryRes.text();
+                // Check for HTML in retry response too
+                if (retryText.trim().startsWith('<!DOCTYPE')) {
+                   retryErrorMessage = "Retry attempt returned HTML instead of JSON.";
+                   console.error(retryErrorMessage);
+                } else {
+                  try {
+                    const retryData = JSON.parse(retryText);
+                    console.error(`Successfully retrieved results with simplified query: '${simplifiedQuery}'. Original query failed.`);
+                    // Return only the parsed data, matching the expected type T
+                    return retryData as T;
+                  } catch (e) {
+                    retryErrorMessage = `Retry succeeded but failed to parse JSON response: ${e instanceof Error ? e.message : String(e)}. Response: ${retryText.substring(0, 200)}...`;
+                    console.error(retryErrorMessage);
+                  }
+                }
+              } else {
+                // Capture retry failure details
+                const retryErrorBody = await retryRes.text().catch(() => "Could not read retry error body");
+                retryErrorMessage = `Retry with simplified query failed with status: ${retryRes.status} ${retryRes.statusText}. Response: ${retryErrorBody.substring(0, 200)}...`;
+                console.error(retryErrorMessage);
               }
-            } else {
-              errorMessage = `Retry failed with status: ${retryRes.status} ${retryRes.statusText}`;
-              console.error(errorMessage);
+            } catch (retryFetchError) {
+                 retryErrorMessage = `Fetch error during retry attempt: ${retryFetchError instanceof Error ? retryFetchError.message : String(retryFetchError)}`;
+                 console.error(retryErrorMessage);
             }
+          } else {
+             retryErrorMessage = "Original query was already simple; retry not attempted.";
+             console.error(retryErrorMessage);
           }
 
-          // If retry failed or wasn't attempted, return empty results with a message
+          // If retry failed or wasn't applicable, return empty results with a more informative error
+          // Combine initial error reason and retry outcome.
+          const finalErrorMessage = `Search failed for query '${sanitizedQuery}'. Initial error: ${res.status} ${res.statusText}. ${retryErrorMessage}`;
           return {
             results: [],
-            error: `The search query '${sanitizedQuery}' caused an error in the search API: ${errorMessage}. Try simplifying your query.`
+            error: finalErrorMessage
           } as T;
         }
-        throw new Error(`API error: ${res.status} ${res.statusText}`);
+        // Handle non-500 errors
+        const errorBody = await res.text().catch(() => "Could not read error response body");
+        throw new Error(`API error: ${res.status} ${res.statusText}. Response: ${errorBody.substring(0, 200)}...`);
       }
 
       // Check if the response is HTML
@@ -395,19 +425,20 @@ export class ApiService {
       let rowMatch;
 
       while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
+        if (!rowMatch[1]) continue;
         const rowContent = rowMatch[1];
 
         // Extract the MP ID from the link
         const idRegex = /persoon\.html\?nummer=(\d+)/i;
         const idMatch = rowContent.match(idRegex);
-        const id = idMatch ? parseInt(idMatch[1]) : null;
+        const id = idMatch?.[1] ? parseInt(idMatch[1], 10) : null;
 
         if (!id) continue;
 
         // Extract the MP name
         const nameRegex = /<a[^>]*>([\s\S]*?)<\/a>/i;
         const nameMatch = rowContent.match(nameRegex);
-        const fullName = nameMatch ? nameMatch[1].trim() : "";
+        const fullName = nameMatch?.[1]?.trim() || "";
 
         // Split the name into first and last name (simple approach)
         const nameParts = fullName.split(" ");
@@ -420,7 +451,9 @@ export class ApiService {
         let cellMatch;
 
         while ((cellMatch = partyRegex.exec(rowContent)) !== null) {
-          cells.push(cellMatch[1].trim());
+          if (cellMatch[1]) {
+            cells.push(cellMatch[1].trim());
+          }
         }
 
         // Party is typically in the second or third cell
@@ -480,7 +513,7 @@ export class ApiService {
       // Extract the MP name from the title
       const titleRegex = /<title>([\s\S]*?)<\/title>/i;
       const titleMatch = html.match(titleRegex);
-      const fullName = titleMatch ? titleMatch[1].trim() : "";
+      const fullName = titleMatch?.[1]?.trim() || "";
 
       // Split the name into first and last name (simple approach)
       const nameParts = fullName.split(" ");
@@ -490,7 +523,7 @@ export class ApiService {
       // Extract the party
       const partyRegex = /<h4>([\s\S]*?)<\/h4>/i;
       const partyMatch = html.match(partyRegex);
-      const party = partyMatch ? partyMatch[1].trim() : "";
+      const party = partyMatch?.[1]?.trim() || "";
 
       // Create the person object
       return {
