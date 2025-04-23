@@ -77,7 +77,22 @@ The OpenTK MCP server provides a robust and well-structured interface to Dutch p
 
 ## Installation
 
-### 1. From Source
+### 1. 1. Using Claude Desktop with NPM Package
+Update your Claude configuration file (~/Library/Application Support/Claude/claude_desktop_config.json):
+
+{
+  "mcpServers": {
+    "opentk-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "opentk-mcp"
+      ]
+    }
+  }
+}
+
+### 2. From Source
 
 **Clone Repository:**
 ```bash
