@@ -33,7 +33,7 @@ The server uses the `@modelcontextprotocol/sdk` to implement the MCP specificati
 
 1. Search for parliamentary documents using complex queries
 2. Access information about Members of Parliament
-3. Retrieve official documents in various formats
+3. Retrieve official documents in various formats and read the full content of the documents
 4. Analyze parliamentary activities and proceedings
 5. Track legislative cases and government pledges
 
