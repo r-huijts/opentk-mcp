@@ -71,14 +71,46 @@ export async function extractTextFromDocx(data: ArrayBuffer): Promise<string> {
  * Summarizes the extracted text to a reasonable length
  * @param text The full extracted text
  * @param maxLength Maximum length of the summary (default: 8000 characters)
- * @returns The summarized text
+ * @param offset Starting position for extraction (default: 0)
+ * @returns Object containing the summarized text and pagination info
  */
-export function summarizeText(text: string, maxLength: number = 8000): string {
-  if (text.length <= maxLength) {
-    return text;
+export function summarizeText(text: string, maxLength: number = 8000, offset: number = 0): {
+  text: string;
+  isTruncated: boolean;
+  totalLength: number;
+  currentOffset: number;
+  nextOffset: number | null;
+  remainingLength: number;
+} {
+  const totalLength = text.length;
+
+  // Validate offset
+  if (offset >= totalLength) {
+    return {
+      text: 'No more content available. You have reached the end of the document.',
+      isTruncated: false,
+      totalLength,
+      currentOffset: offset,
+      nextOffset: null,
+      remainingLength: 0
+    };
   }
 
-  // Simple approach: Take the first part of the text up to maxLength
-  // and add an ellipsis to indicate truncation
-  return text.substring(0, maxLength) + '... [Text truncated due to length]';
+  // Extract the portion of text from offset to offset + maxLength
+  const endPosition = Math.min(offset + maxLength, totalLength);
+  const extractedText = text.substring(offset, endPosition);
+  const isTruncated = endPosition < totalLength;
+
+  // Calculate next offset and remaining length
+  const nextOffset = isTruncated ? endPosition : null;
+  const remainingLength = totalLength - endPosition;
+
+  return {
+    text: extractedText + (isTruncated ? '... [Text truncated due to length]' : ''),
+    isTruncated,
+    totalLength,
+    currentOffset: offset,
+    nextOffset,
+    remainingLength
+  };
 }

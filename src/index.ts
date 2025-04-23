@@ -702,11 +702,12 @@ mcp.tool(
 /** Get document content */
 mcp.tool(
   "get_document_content",
-  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from PDF or Word (DOCX) documents using professional libraries and returned in a readable format. Use this when you need to analyze or discuss the specific content of a document rather than just its metadata.",
+  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from PDF or Word (DOCX) documents using professional libraries and returned in a readable format.\n\nIMPORTANT: For longer documents, the content may be truncated. The response includes pagination information to help you retrieve the complete document:\n\n- isTruncated: Indicates whether there is more content available\n- totalLength: The total length of the document content\n- currentOffset: The starting position of the current content chunk\n- nextOffset: The starting position for the next content chunk (use this as the 'offset' parameter in your next call)\n- remainingLength: The amount of content remaining after the current chunk\n\nTo retrieve the complete document, you can make multiple calls to this tool, incrementing the offset each time:\n\nExample usage:\n1. First call: get_document_content({docId: '2025D18220'})\n2. If the response shows isTruncated=true, call again with the nextOffset value:\n   get_document_content({docId: '2025D18220', offset: 8000})\n3. Continue until isTruncated=false or you've retrieved all the content you need.\n\nThis pagination approach allows you to analyze even very long documents within the conversation context.\n\nUse this tool when you need to analyze or discuss the specific content of a document rather than just its metadata.",
   {
-    docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from")
+    docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from"),
+    offset: z.number().optional().describe("Optional starting position for text extraction (default: 0). Use this to retrieve additional content from a truncated document by setting it to the 'nextOffset' value from a previous response.")
   },
-  async ({ docId }) => {
+  async ({ docId, offset = 0 }) => {
     try {
       // First try to get the document page to extract the link
       const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
@@ -717,13 +718,25 @@ mcp.tool(
       // Extract the document link
       const documentLink = extractDocumentLink(html);
 
-      if (!documentLink) {
+      if (documentLink === 'NOT_FOUND') {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      } else if (!documentLink) {
         return {
           content: [{
             type: "text",
             text: JSON.stringify({
               error: `Could not find document link for document ${docId}`,
-              suggestion: "Try using get_document_details to verify the document ID is correct."
+              suggestion: "The document exists but no download link was found. Try using get_document_details to verify the document ID is correct.",
+              documentUrl: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
             }, null, 2)
           }]
         };
@@ -758,10 +771,10 @@ mcp.tool(
         };
       }
 
-      // Summarize the text if it's too long
-      const summarizedText = summarizeText(extractedText);
+      // Summarize the text with pagination support
+      const summary = summarizeText(extractedText, 8000, offset);
 
-      // Return the document content along with metadata
+      // Return the document content along with metadata and pagination info
       return {
         content: [{
           type: "text",
@@ -771,9 +784,14 @@ mcp.tool(
             type: details?.type || "Unknown type",
             date: details?.datum || "Unknown date",
             documentFormat: documentType,
-            content: summarizedText,
-            note: summarizedText.length < extractedText.length ?
-              `The document content has been truncated due to length. Use the document link to view the full ${documentType} document.` :
+            content: summary.text,
+            isTruncated: summary.isTruncated,
+            totalLength: summary.totalLength,
+            currentOffset: summary.currentOffset,
+            nextOffset: summary.nextOffset,
+            remainingLength: summary.remainingLength,
+            note: summary.isTruncated ?
+              `The document content has been truncated due to length. To view more content, call this tool again with offset=${summary.nextOffset}. Example: get_document_content({docId: '${docId}', offset: ${summary.nextOffset}})` :
               `Full document content extracted successfully from ${documentType} document.`,
             documentLink: details?.directLinkPdf || null
           }, null, 2)
@@ -788,7 +806,7 @@ mcp.tool(
           text: JSON.stringify({
             error: `Error extracting document content: ${error.message || 'Unknown error'}`,
             suggestion: "Try using get_document_details to verify the document exists and is accessible.",
-            documentLink: `${BASE_URL}/tkconv/document.html?nummer=${encodeURIComponent(docId)}`
+            documentLink: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
           }, null, 2)
         }]
       };

@@ -68,6 +68,11 @@ const extractValue = (html: string, regex: RegExp, group: number = 1): string | 
 };
 
 export function extractDocumentLink(html: string): string | null {
+  // Check if the document was not found
+  if (html.includes('Found nothing in document.html!!')) {
+    return 'NOT_FOUND';
+  }
+
   const match = html.match(/<a href="([^"]+)"[^>]*>Directe link naar document<\/a>/i);
   if (match && match[1]) {
     // Make sure the link starts with 'tkconv/getraw' or 'getraw'
