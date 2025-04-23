@@ -44,6 +44,7 @@ The project leverages Bert Hubert's tkconv service as its primary data source, w
 ### 1. Using Claude Desktop with NPM Package
 Update your Claude configuration file (~/Library/Application Support/Claude/claude_desktop_config.json):
 
+```
 {
   "mcpServers": {
     "opentk-mcp": {
@@ -55,6 +56,7 @@ Update your Claude configuration file (~/Library/Application Support/Claude/clau
     }
   }
 }
+```
 
 ### 2. From Source
 
