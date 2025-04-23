@@ -41,7 +41,7 @@ The project leverages Bert Hubert's tkconv service as its primary data source, w
 
 ## Installation
 
-### 1. 1. Using Claude Desktop with NPM Package
+### 1. Using Claude Desktop with NPM Package
 Update your Claude configuration file (~/Library/Application Support/Claude/claude_desktop_config.json):
 
 {
