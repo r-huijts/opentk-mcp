@@ -39,42 +39,6 @@ The server uses the `@modelcontextprotocol/sdk` to implement the MCP specificati
 
 The project leverages Bert Hubert's tkconv service as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs.
 
-
-## Search Functionality
-
-The search functionality is particularly sophisticated, supporting:
-
-- Simple keyword searches: `kunstmatige intelligentie`
-- Exact phrase searches: `"kunstmatige intelligentie"`
-- Exclusion searches: `Hubert NOT Bruls`
-- Boolean operators: `OR`, `NEAR()`
-
-The implementation handles various edge cases:
-- Preserves quotes in search queries
-- Uses proper content type headers
-- Implements fallback mechanisms for API errors
-- Provides meaningful error messages
-
-## Error Handling
-
-The API service includes robust error handling:
-- Graceful handling of API errors (4xx, 5xx)
-- Fallback to simplified queries when complex ones fail
-- Detailed error messages for debugging
-- Proper logging to stderr (not stdout, which would break the stdio transport)
-
-## Configuration
-
-The server connects to Bert Hubert's [tkconv service](https://berthub.eu/tkconv/) as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs. This service, created by Bert Hubert, does the heavy lifting of collecting, organizing, and making available Dutch parliamentary data in a developer-friendly format. Our MCP server builds upon this foundation to create a standardized interface for AI assistants to interact with this valuable data.
-
-## License
-
-MIT
-
-## Conclusion
-
-The OpenTK MCP server provides a robust and well-structured interface to Dutch parliamentary data, making it accessible to AI assistants through the Model Context Protocol. Its modular design, comprehensive API, and thorough testing ensure reliable access to parliamentary information for AI-assisted research, analysis, and information retrieval.
-
 ## Installation
 
 ### 1. 1. Using Claude Desktop with NPM Package
@@ -133,5 +97,41 @@ Update your Claude configuration file:
 ```
 
 Make sure to replace `/absolute/path/to/your/opentk-mcp/` with the actual path to your installation.
+
+## Search Functionality
+
+The search functionality is particularly sophisticated, supporting:
+
+- Simple keyword searches: `kunstmatige intelligentie`
+- Exact phrase searches: `"kunstmatige intelligentie"`
+- Exclusion searches: `Hubert NOT Bruls`
+- Boolean operators: `OR`, `NEAR()`
+
+The implementation handles various edge cases:
+- Preserves quotes in search queries
+- Uses proper content type headers
+- Implements fallback mechanisms for API errors
+- Provides meaningful error messages
+
+## Error Handling
+
+The API service includes robust error handling:
+- Graceful handling of API errors (4xx, 5xx)
+- Fallback to simplified queries when complex ones fail
+- Detailed error messages for debugging
+- Proper logging to stderr (not stdout, which would break the stdio transport)
+
+## Configuration
+
+The server connects to Bert Hubert's [tkconv service](https://berthub.eu/tkconv/) as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs. This service, created by Bert Hubert, does the heavy lifting of collecting, organizing, and making available Dutch parliamentary data in a developer-friendly format. Our MCP server builds upon this foundation to create a standardized interface for AI assistants to interact with this valuable data.
+
+## License
+
+MIT
+
+## Conclusion
+
+The OpenTK MCP server provides a robust and well-structured interface to Dutch parliamentary data, making it accessible to AI assistants through the Model Context Protocol. Its modular design, comprehensive API, and thorough testing ensure reliable access to parliamentary information for AI-assisted research, analysis, and information retrieval.
+
 
 Once configured, Claude will be able to access Dutch parliamentary data through the OpenTK MCP server. The server exposes all the tools described in the [Usage](#usage) section above.
