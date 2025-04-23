@@ -3,28 +3,26 @@
 > **Important Attribution**: This MCP server is built as a wrapper around the excellent [OpenTK project](https://berthub.eu/tkconv/) created by [Bert Hubert](https://berthub.eu/). The OpenTK project provides unprecedented access to Dutch parliamentary data through a user-friendly interface. Learn more about the project in Bert's article: [Welkom bij OpenTK](https://berthub.eu/articles/posts/welkom-bij-opentk/). All credit for the underlying data access and processing goes to Bert Hubert and his contributions to open government data.
 
 A bridge between large language models (LLMs) and Dutch parliamentary data through a standardized interface. This MCP server provides access to Dutch parliamentary documents, debates, and member information from the Tweede Kamer.
-
+ 
 ## Real-World Natural Language Interaction Examples
 
-### Example 1: Researching Parliamentary Discussions on Climate Policy
+## Example 1: Comparing Party Positions on AI Policies
+User Query: "When comparing the activities of opposition parties PvdA, GroenLinks, and Volt with government party BBB in the Dutch House of Representatives in the field of AI, what are actions they can undertake together in the short term that align with the positions and views they have demonstrated over the past year? Please use sources from OpenTK."
 
-**User Query:** "I need to find recent parliamentary discussions about climate policy and carbon emissions targets in the Netherlands."
+## Example 2: Researching Parliamentary Discussions on Climate Policy
+User Query: "I'd like to analyze recent parliamentary debates on climate policy and emission reduction targets in the Netherlands. Can you help me identify key discussions and the main positions taken by different parties over the past six months?"
 
-### Example 2: Information About a Specific MP
+## Example 3: Information About a Specific MP's Voting Record
+User Query: "What is MP Pieter Omtzigt's voting record on healthcare reform legislation, and how does his position differ from other independent members? Has he introduced any motions on this topic?"
 
-**User Query:** "Who is the current MP Pieter Omtzigt and what's his background?"
+## Example 4: Finding Recent Housing Legislation Developments
+User Query: "What are the most significant parliamentary documents and debates about affordable housing legislation from the past year? I'm particularly interested in proposals addressing the rental market crisis."
 
-### Example 3: Finding Recent Housing Legislation
+## Example 5: Finding MPs with Specific Committee Memberships
+User Query: "Which MPs currently serve on both the Finance Committee and the Economic Affairs Committee? What parties do they represent, and have they recently submitted any joint initiatives?"
 
-**User Query:** "What are the most recent parliamentary documents about housing legislation?"
-
-### Example 4: Finding MPs with Birthdays Today
-
-**User Query:** "Are there any Dutch MPs celebrating their birthday today?"
-
-### Example 5: Finding Upcoming Parliamentary Activities
-
-**User Query:** "What parliamentary activities are scheduled for next week?"
+## Example 6: Identifying Upcoming Parliamentary Activities on Digital Security
+User Query: "Are there any scheduled committee meetings or debates about cybersecurity and digital infrastructure planned for the next month? Which ministers will be participating and what specific topics will be addressed?"
 
 
 ## Project Concept
