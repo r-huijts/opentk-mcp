@@ -10,91 +10,22 @@ A bridge between large language models (LLMs) and Dutch parliamentary data throu
 
 **User Query:** "I need to find recent parliamentary discussions about climate policy and carbon emissions targets in the Netherlands."
 
-**AI Assistant Process:**
-1. Uses `search_tk` tool with query "klimaatbeleid CO2 doelstellingen"
-2. Analyzes results and identifies key documents
-3. Uses `get_document_details` to retrieve metadata for the most relevant documents
-4. Provides a summary of findings with `get_document_links` for further reading
-
-**Response Example:**
-"I found several recent parliamentary discussions on climate policy. The most significant is a debate from March 2025 where the Minister of Climate presented new carbon emission targets. Here are the key documents:
-- [Committee Report on Climate Goals 2025-2030](https://www.tweedekamer.nl/...)
-- [Minister's Letter on Updated CO2 Reduction Targets](https://www.tweedekamer.nl/...)
-The documents show that the government is proposing a 60% reduction in emissions by 2030, which was debated extensively in the committee meeting on March 15th."
-
 ### Example 2: Information About a Specific MP
 
 **User Query:** "Who is the current MP Pieter Omtzigt and what's his background?"
-
-**AI Assistant Process:**
-1. Uses `list_persons` to find Pieter Omtzigt's MP ID and basic information
-2. Retrieves his photo using `get_photo`
-3. Analyzes his recent parliamentary activities using `search_tk_filtered` with his name and type "Document"
-
-**Response Example:**
-"Pieter Omtzigt is a current Member of Parliament who leads the Nieuw Sociaal Contract (NSC) party. According to the parliamentary database, he has been in parliament since 2003 and is known for his work on government transparency and accountability. He played a key role in uncovering the childcare benefits scandal. Recently, he has been active in debates on constitutional reform and tax policy, with several parliamentary questions submitted in the past month. Here's his official parliamentary portrait: [Image]"
 
 ### Example 3: Finding Recent Housing Legislation
 
 **User Query:** "What are the most recent parliamentary documents about housing legislation?"
 
-**AI Assistant Process:**
-1. Uses `search_by_category` with category "alles" and query "woningwet"
-2. Sorts results by date to focus on recent entries
-3. Uses `get_document_details` to retrieve metadata for the most relevant documents
-4. Provides clickable links with `get_document_links`
-
-**Response Example:**
-"I found several recent parliamentary documents related to housing legislation. The most recent is a letter from the Minister of Housing dated April 3, 2025, outlining proposed amendments to the Housing Act (Woningwet). The key changes include new regulations for affordable housing development and rent control measures. Here are links to the most relevant documents:
-
-[Download Minister's Letter on Housing Act Amendments (PDF)](https://berthub.eu/tkconv/getraw/2025D12345)
-[View on Tweede Kamer website](https://www.tweedekamer.nl/kamerstukken/brieven_regering/detail?id=2025Z12345)
-
-The letter indicates that the formal bill will be submitted to parliament next month after the consultation period ends."
-
 ### Example 4: Finding MPs with Birthdays Today
 
 **User Query:** "Are there any Dutch MPs celebrating their birthday today?"
-
-**AI Assistant Process:**
-1. Uses `birthdays_today` to retrieve MPs with birthdays on the current date
-2. For each MP with a birthday, uses `get_photo` to retrieve their portrait
-
-**Response Example:**
-"Yes, there are two Members of Parliament celebrating their birthdays today:
-
-1. **Judith van Swaaij** (D66) turns 42 today. She has been serving in parliament since 2021 and is currently on the Education Committee.
-
-2. **Bart van Kent** (SP) turns 38 today. He is a member of the Social Affairs Committee and has been in parliament since 2017.
-
-Here are their official parliamentary portraits: [Images]
-
-Would you like me to find more information about either of these MPs?"
 
 ### Example 5: Finding Upcoming Parliamentary Activities
 
 **User Query:** "What parliamentary activities are scheduled for next week?"
 
-**AI Assistant Process:**
-1. Uses `get_upcoming_activities` to retrieve scheduled parliamentary activities
-2. Filters and organizes activities by date
-
-**Response Example:**
-"Here are the key parliamentary activities scheduled for next week:
-
-**Monday, April 28, 2025:**
-- 10:00 AM: Committee meeting on Climate Policy (Thorbeckezaal)
-- 2:00 PM: Plenary debate on the Spring Budget (Plenaire zaal)
-
-**Tuesday, April 29, 2025:**
-- 9:30 AM: Technical briefing on Digital Security (Troelstrazaal)
-- 1:00 PM: Committee meeting on Healthcare Reform (Groen van Prinstererzaal)
-
-**Wednesday, April 30, 2025:**
-- 10:00 AM: Plenary debate on Housing Crisis (Plenaire zaal)
-- 3:00 PM: Roundtable discussion with experts on Energy Transition (Thorbeckezaal)
-
-Would you like more details about any of these activities?"
 
 ## Project Concept
 
@@ -110,31 +41,6 @@ The server uses the `@modelcontextprotocol/sdk` to implement the MCP specificati
 
 The project leverages Bert Hubert's tkconv service as its primary data source, which provides a more accessible API than the official Dutch Parliament APIs.
 
-## MCP Tools
-
-The MCP server currently exposes the following tools to AI assistants:
-
-### MP Information Tools
-1. `birthdays_today` - Lists all Members of Parliament celebrating their birthday today
-2. `list_persons` - Provides a complete directory of current Members of Parliament
-3. `get_photo` - Retrieves an MP's official portrait photograph
-
-### Search Tools
-4. `search_tk` - Comprehensive search across all parliamentary data
-5. `search_tk_filtered` - Search filtered by document type (Document, Activiteit, Zaak)
-6. `search_by_category` - Search specifically for documents of a certain category (questions, motions, etc.)
-
-### Document Tools
-7. `get_document_details` - Retrieves metadata about a parliamentary document
-8. `get_document_links` - Converts document URLs into clickable links
-
-### Committee Tools
-9. `get_committees` - Retrieves a list of all parliamentary committees
-10. `get_committee_details` - Retrieves detailed information about a specific committee
-
-### Activity and Voting Tools
-11. `get_upcoming_activities` - Retrieves a list of upcoming parliamentary activities
-12. `get_voting_results` - Retrieves recent voting results on parliamentary motions and bills
 
 ## Search Functionality
 
