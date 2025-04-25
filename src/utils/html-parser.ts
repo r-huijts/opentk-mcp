@@ -563,21 +563,27 @@ export function extractVotingResultsFromHtml(html: string, baseUrl: string): Vot
     let forParties: string[] = [];
     let againstParties: string[] = [];
 
-    if (partiesCells.length >= 2) {
-      // Extract "For" parties
-      const forPartiesCell = partiesCells[1] || "";
-      if (forPartiesCell.includes("<b>Voor</b>:")) {
-        const forPartiesText = forPartiesCell.replace(/<b>Voor<\/b>:\s*/, "").trim();
+    // Find the cell with "Voor" parties
+    const forPartiesCell = partiesCells.find(cell => cell.includes("<b>Voor</b>:")) || "";
+    if (forPartiesCell) {
+      // Extract the text after "<b>Voor</b>:"
+      const forPartiesMatch = forPartiesCell.match(/<b>Voor<\/b>:\s*(.*?)(?:<\/td>|$)/i);
+      if (forPartiesMatch && forPartiesMatch[1]) {
+        const forPartiesText = forPartiesMatch[1].trim();
+        // Split by "|" and trim each party name
         forParties = forPartiesText.split("|").map(p => p.trim()).filter(p => p);
       }
+    }
 
-      // Extract "Against" parties
-      if (partiesCells.length >= 3) {
-        const againstPartiesCell = partiesCells[2] || "";
-        if (againstPartiesCell.includes("<b>Tegen</b>:")) {
-          const againstPartiesText = againstPartiesCell.replace(/<b>Tegen<\/b>:\s*/, "").trim();
-          againstParties = againstPartiesText.split("|").map(p => p.trim()).filter(p => p);
-        }
+    // Find the cell with "Tegen" parties
+    const againstPartiesCell = partiesCells.find(cell => cell.includes("<b>Tegen</b>:")) || "";
+    if (againstPartiesCell) {
+      // Extract the text after "<b>Tegen</b>:"
+      const againstPartiesMatch = againstPartiesCell.match(/<b>Tegen<\/b>:\s*(.*?)(?:<\/td>|$)/i);
+      if (againstPartiesMatch && againstPartiesMatch[1]) {
+        const againstPartiesText = againstPartiesMatch[1].trim();
+        // Split by "|" and trim each party name
+        againstParties = againstPartiesText.split("|").map(p => p.trim()).filter(p => p);
       }
     }
 
