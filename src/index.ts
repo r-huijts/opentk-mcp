@@ -555,10 +555,10 @@ mcp.tool(
 /** Get voting results */
 mcp.tool(
   "get_voting_results",
-  "Retrieves recent voting results on parliamentary motions and bills. Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which parties voted for or against. This tool is valuable for tracking the outcome of parliamentary decisions, understanding voting patterns, and analyzing party positions on specific issues.",
+  "Retrieves recent voting results on parliamentary motions and bills. Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which political parties voted for or against. This tool is valuable for tracking the outcome of parliamentary decisions, understanding voting patterns, and analyzing party positions on specific issues. The party information allows you to see exactly which parties supported or opposed each motion, providing insight into political alignments and voting behavior.",
   {
     limit: z.number().optional().describe("Maximum number of voting results to return (default: 20, max: 100)"),
-    format: z.enum(["full", "summary"]).optional().describe("Format of the results: 'full' for complete data including party votes or 'summary' for a condensed version (default: 'full')")
+    format: z.enum(["full", "summary"]).optional().describe("Format of the results: 'full' for complete data or 'summary' for a more structured version with renamed fields (default: 'full'). Both formats include party information.")
   },
   async ({ limit = 20, format = "full" }) => {
     try {
@@ -597,9 +597,11 @@ mcp.tool(
           date: item.date,
           result: item.result,
           submitter: item.submitter,
-          voteCount: item.votes ? {
-            voor: item.votes.voorAantal,
-            tegen: item.votes.tegenAantal
+          votes: item.votes ? {
+            voorAantal: item.votes.voorAantal,
+            tegenAantal: item.votes.tegenAantal,
+            voorPartijen: item.votes.voor,
+            tegenPartijen: item.votes.tegen
           } : undefined,
           url: item.url
         }));
