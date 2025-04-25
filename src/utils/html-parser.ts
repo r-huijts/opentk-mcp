@@ -55,9 +55,12 @@ interface VotingResult {
   title: string;
   date: string;
   result: 'Aangenomen' | 'Verworpen' | 'Ingetrokken' | 'Aangehouden' | string;
+  submitter?: string;
   votes?: {
     voor: string[];
     tegen: string[];
+    voorAantal: number;
+    tegenAantal: number;
   };
   url: string;
 }
@@ -477,46 +480,52 @@ export function extractVotingResultsFromHtml(html: string, baseUrl: string): Vot
 
   const votingResults: VotingResult[] = [];
 
-  // Extract the table containing voting results
-  const tableRegex = /<table[^>]*>[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/i;
-  const tableMatch = html.match(tableRegex);
+  // Extract all tbody sections (each contains a voting result and its details)
+  const tbodyRegex = /<tbody>([\s\S]*?)<\/tbody>/gi;
+  let tbodyMatch: RegExpExecArray | null;
 
-  if (!tableMatch || !tableMatch[1]) {
-    return [];
-  }
+  while ((tbodyMatch = tbodyRegex.exec(html)) !== null) {
+    if (!tbodyMatch[1]) continue;
 
-  const tableContent = tableMatch[1];
+    const tbodyContent = tbodyMatch[1];
 
-  // Extract each row (voting result) from the table
-  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  let rowMatch;
+    // Extract rows within this tbody
+    const rows: string[] = [];
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch: RegExpExecArray | null;
 
-  while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
-    if (!rowMatch[1]) continue;
+    while ((rowMatch = rowRegex.exec(tbodyContent)) !== null) {
+      if (rowMatch[1]) {
+        rows.push(rowMatch[1]);
+      }
+    }
 
-    const rowContent = rowMatch[1];
+    // Need at least the main row and the parties row
+    if (rows.length < 2) continue;
 
-    // Extract cells
+    // Process the main row (first row)
+    const mainRowContent = rows[0];
+
+    // Extract cells from the main row
     const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
     const cells: string[] = [];
-    let cellMatch;
+    let cellMatch: RegExpExecArray | null;
 
-    while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
+    while ((cellMatch = cellRegex.exec(mainRowContent as string)) !== null) {
       if (cellMatch[1]) {
         cells.push(cellMatch[1].trim());
       }
     }
 
-    if (cells.length < 3) continue;
+    // Need at least date, title, submitter, result, and vote counts
+    if (cells.length < 5) continue;
 
     // Extract date
-    if (!cells[0]) continue;
-    const dateCell = cells[0];
+    const dateCell = cells[0] || "";
     const date = dateCell.replace(/<[^>]+>/g, "").trim();
 
     // Extract title and link
-    if (!cells[1]) continue;
-    const titleCell = cells[1];
+    const titleCell = cells[1] || "";
     const titleMatch = titleCell.match(/<a href="(zaak\.html\?nummer=([^"]+))">([^<]+)<\/a>/);
 
     if (!titleMatch || !titleMatch[1] || !titleMatch[2] || !titleMatch[3]) continue;
@@ -525,17 +534,67 @@ export function extractVotingResultsFromHtml(html: string, baseUrl: string): Vot
     const url = new URL(titleMatch[1], baseUrl).href;
     const title = titleMatch[3].trim();
 
+    // Extract submitter
+    const submitter = cells[2] ? cells[2].replace(/<[^>]+>/g, "").trim() : null;
+
     // Extract result
-    if (!cells[2]) continue;
-    const resultCell = cells[2];
+    const resultCell = cells[3] || "";
     const result = resultCell.replace(/<[^>]+>/g, "").trim();
 
+    // Extract vote counts
+    const forVotes = cells[4] ? parseInt(cells[4].replace(/<[^>]+>/g, "").trim(), 10) : 0;
+    const againstVotes = cells[5] ? parseInt(cells[5].replace(/<[^>]+>/g, "").trim(), 10) : 0;
+
+    // Process the parties row (second row)
+    const partiesRowContent = rows[1];
+
+    // Extract cells from the parties row
+    const partiesCells: string[] = [];
+    let partiesCellMatch: RegExpExecArray | null;
+    const partiesCellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+
+    while ((partiesCellMatch = partiesCellRegex.exec(partiesRowContent as string)) !== null) {
+      if (partiesCellMatch[1]) {
+        partiesCells.push(partiesCellMatch[1].trim());
+      }
+    }
+
+    // Extract parties that voted for and against
+    let forParties: string[] = [];
+    let againstParties: string[] = [];
+
+    if (partiesCells.length >= 2) {
+      // Extract "For" parties
+      const forPartiesCell = partiesCells[1] || "";
+      if (forPartiesCell.includes("<b>Voor</b>:")) {
+        const forPartiesText = forPartiesCell.replace(/<b>Voor<\/b>:\s*/, "").trim();
+        forParties = forPartiesText.split("|").map(p => p.trim()).filter(p => p);
+      }
+
+      // Extract "Against" parties
+      if (partiesCells.length >= 3) {
+        const againstPartiesCell = partiesCells[2] || "";
+        if (againstPartiesCell.includes("<b>Tegen</b>:")) {
+          const againstPartiesText = againstPartiesCell.replace(/<b>Tegen<\/b>:\s*/, "").trim();
+          againstParties = againstPartiesText.split("|").map(p => p.trim()).filter(p => p);
+        }
+      }
+    }
+
+    // Create the voting result object with all details
     votingResults.push({
-      id: id,
-      title: title,
-      date: date,
-      result: result,
-      url: url
+      id,
+      title,
+      date,
+      result,
+      submitter: submitter || undefined,
+      votes: {
+        voor: forParties,
+        tegen: againstParties,
+        voorAantal: forVotes,
+        tegenAantal: againstVotes
+      },
+      url
     });
   }
 

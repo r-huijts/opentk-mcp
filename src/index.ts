@@ -555,11 +555,12 @@ mcp.tool(
 /** Get voting results */
 mcp.tool(
   "get_voting_results",
-  "Retrieves recent voting results on parliamentary motions and bills. Each result includes the title of the motion/bill, the date of the vote, and whether it was accepted or rejected. This tool is valuable for tracking the outcome of parliamentary decisions and understanding which proposals have been approved or rejected.",
+  "Retrieves recent voting results on parliamentary motions and bills. Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which parties voted for or against. This tool is valuable for tracking the outcome of parliamentary decisions, understanding voting patterns, and analyzing party positions on specific issues.",
   {
-    limit: z.number().optional().describe("Maximum number of voting results to return (default: 20, max: 100)")
+    limit: z.number().optional().describe("Maximum number of voting results to return (default: 20, max: 100)"),
+    format: z.enum(["full", "summary"]).optional().describe("Format of the results: 'full' for complete data including party votes or 'summary' for a condensed version (default: 'full')")
   },
-  async ({ limit = 20 }) => {
+  async ({ limit = 20, format = "full" }) => {
     try {
       // Validate and cap the limit
       const validatedLimit = Math.min(Math.max(1, limit), 100);
@@ -571,7 +572,10 @@ mcp.tool(
         return {
           content: [{
             type: "text",
-            text: "No voting results found or there was an error retrieving the voting results list. Please try again later."
+            text: JSON.stringify({
+              error: "No voting results found or there was an error retrieving the voting results list. Please try again later.",
+              url: `${BASE_URL}/stemmingen.html`
+            }, null, 2)
           }]
         };
       }
@@ -583,13 +587,35 @@ mcp.tool(
         return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
       }).slice(0, validatedLimit);
 
+      // Format the results based on the requested format
+      let formattedResults;
+      if (format === "summary") {
+        // Create a summary version with only essential fields
+        formattedResults = sortedResults.map(item => ({
+          id: item.id,
+          title: item.title,
+          date: item.date,
+          result: item.result,
+          submitter: item.submitter,
+          voteCount: item.votes ? {
+            voor: item.votes.voorAantal,
+            tegen: item.votes.tegenAantal
+          } : undefined,
+          url: item.url
+        }));
+      } else {
+        // Use the full data
+        formattedResults = sortedResults;
+      }
+
       return {
         content: [{
           type: "text",
           text: JSON.stringify({
             total: votingResults.length,
             limit: validatedLimit,
-            results: sortedResults
+            format,
+            results: formattedResults
           }, null, 2)
         }]
       };
@@ -597,7 +623,10 @@ mcp.tool(
       return {
         content: [{
           type: "text",
-          text: `Error fetching voting results: ${error.message || 'Unknown error'}`
+          text: JSON.stringify({
+            error: `Error fetching voting results: ${error.message || 'Unknown error'}`,
+            url: `${BASE_URL}/stemmingen.html`
+          }, null, 2)
         }]
       };
     }
