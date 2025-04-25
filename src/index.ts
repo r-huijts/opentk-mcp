@@ -712,6 +712,20 @@ mcp.tool(
       // First try to get the document page to extract the link
       const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
 
+      // Check if the document exists
+      if (html.includes('Found nothing in document.html!!')) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      }
+
       // Get document details for metadata
       const details = extractDocumentDetailsFromHtml(html, BASE_URL);
 
