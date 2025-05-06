@@ -65,6 +65,35 @@ interface VotingResult {
   url: string;
 }
 
+interface RecentDocument {
+  id: string;
+  title: string;
+  type: string;
+  date: string;
+  updated: string;
+  committee?: string;
+  subject?: string;
+  url: string;
+}
+
+interface BirthdayPerson {
+  id: string;
+  name: string;
+  party?: string;
+  url: string;
+}
+
+interface OverviewData {
+  recentDocuments: RecentDocument[];
+  birthdays: BirthdayPerson[];
+  lastUpdated: string;
+  pagination: {
+    currentPage: number;
+    hasMoreDocuments: boolean;
+    totalDocumentsRetrieved: number;
+  };
+}
+
 const extractValue = (html: string, regex: RegExp, group: number = 1): string | null => {
   const match = html.match(regex);
   return match && match[group] ? match[group].trim() : null;
@@ -605,4 +634,176 @@ export function extractVotingResultsFromHtml(html: string, baseUrl: string): Vot
   }
 
   return votingResults;
+}
+
+/**
+ * Extracts overview information from the main tkconv page
+ * @param html The HTML content of the main page
+ * @param baseUrl The base URL for resolving relative URLs
+ * @param page The page number to retrieve (default: 1)
+ * @returns Overview data including recent documents and birthdays
+ */
+export function extractOverviewFromHtml(html: string, baseUrl: string, page: number = 1): OverviewData {
+  if (!html) {
+    return {
+      recentDocuments: [],
+      birthdays: [],
+      lastUpdated: new Date().toISOString(),
+      pagination: {
+        currentPage: 1,
+        hasMoreDocuments: false,
+        totalDocumentsRetrieved: 0
+      }
+    };
+  }
+
+  const recentDocuments: RecentDocument[] = [];
+  const birthdays: BirthdayPerson[] = [];
+  let lastUpdated = new Date().toISOString();
+
+  // Extract the table containing recent documents
+  const tableRegex = /<table[^>]*>[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/i;
+  const tableMatch = html.match(tableRegex);
+
+  if (tableMatch && tableMatch[1]) {
+    const tableContent = tableMatch[1];
+
+    // Extract each row (document) from the table
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch;
+
+    while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
+      if (!rowMatch[1]) continue;
+
+      const rowContent = rowMatch[1];
+
+      // Extract cells
+      const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+      const cells: string[] = [];
+      let cellMatch;
+
+      while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
+        if (cellMatch[1]) {
+          cells.push(cellMatch[1].trim());
+        }
+      }
+
+      // Need at least date, updated, committee, subject, and title/type
+      if (cells.length < 5) continue;
+
+      // Extract date
+      const date = cells[0] ? cells[0].replace(/<[^>]+>/g, "").trim() : "";
+      if (!date) continue;
+
+      // Extract updated date
+      const updated = cells[1] ? cells[1].replace(/<[^>]+>/g, "").trim() : "";
+
+      // Extract committee
+      const committee = cells[2] ? cells[2].replace(/<[^>]+>/g, "").trim() : undefined;
+
+      // Extract subject
+      const subject = cells[3] ? cells[3].replace(/<[^>]+>/g, "").trim() : undefined;
+
+      // Extract title, type, and document ID from the last cell
+      const titleCell = cells[4] || "";
+
+      // Extract document ID and title from the link if present
+      const docLinkMatch = titleCell.match(/<a href="document\.html\?nummer=([^"]+)">([\s\S]*?)<\/a>/i);
+      let id = "";
+      let title = "";
+      let url = "";
+
+      if (docLinkMatch && docLinkMatch[1] && docLinkMatch[2]) {
+        id = docLinkMatch[1];
+        title = docLinkMatch[2].trim();
+        url = new URL(`document.html?nummer=${id}`, baseUrl).href;
+      } else {
+        // If no link, just use the text content
+        title = titleCell.replace(/<[^>]+>/g, "").trim();
+        // Generate a placeholder ID
+        id = `unknown-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        url = baseUrl;
+      }
+
+      // Extract document type (usually on the next line after the title)
+      const typeMatch = titleCell.match(/<br\s*\/?>\s*(.*?)(?:<|$)/i);
+      const type = typeMatch && typeMatch[1] ? typeMatch[1].trim() : "Unknown";
+
+      // Add the document to the list
+      recentDocuments.push({
+        id,
+        title,
+        type,
+        date,
+        updated,
+        committee,
+        subject,
+        url
+      });
+
+      // Limit to 20 documents to avoid overwhelming the response
+      if (recentDocuments.length >= 20) break;
+    }
+  }
+
+  // Extract birthdays
+  const birthdayRegex = /Jarig vandaag\s*((?:<a[^>]*>[^<]*<\/a>\s*)+)/i;
+  const birthdayMatch = html.match(birthdayRegex);
+
+  if (birthdayMatch && birthdayMatch[1]) {
+    const birthdayContent = birthdayMatch[1];
+    const birthdayLinkRegex = /<a href="persoon\.html\?nummer=([^"]+)">([\s\S]*?)<\/a>/gi;
+    let birthdayLinkMatch;
+
+    while ((birthdayLinkMatch = birthdayLinkRegex.exec(birthdayContent)) !== null) {
+      if (birthdayLinkMatch[1] && birthdayLinkMatch[2]) {
+        const id = birthdayLinkMatch[1];
+        const nameWithParty = birthdayLinkMatch[2].trim();
+
+        // Extract name and party if in format "Name (Party)"
+        const namePartyMatch = nameWithParty.match(/(.*?)\s*\((.*?)\)\s*$/);
+        let name = nameWithParty;
+        let party = undefined;
+
+        if (namePartyMatch && namePartyMatch[1] && namePartyMatch[2]) {
+          name = namePartyMatch[1].trim();
+          party = namePartyMatch[2].trim();
+        }
+
+        const url = new URL(`persoon.html?nummer=${id}`, baseUrl).href;
+
+        birthdays.push({
+          id,
+          name,
+          party,
+          url
+        });
+      }
+    }
+  }
+
+  // For pagination, we would normally need to fetch different pages from the server
+  // Since the tkconv site doesn't have explicit pagination, we're simulating it by
+  // limiting the number of documents per page and tracking which ones we've shown
+
+  const documentsPerPage = 10;
+  const startIndex = (page - 1) * documentsPerPage;
+  const endIndex = startIndex + documentsPerPage;
+
+  // Get the documents for the current page
+  const paginatedDocuments = recentDocuments.slice(startIndex, endIndex);
+
+  // Check if there are more documents available
+  const hasMoreDocuments = endIndex < recentDocuments.length;
+
+  return {
+    recentDocuments: paginatedDocuments,
+    birthdays, // Birthdays are always shown regardless of page
+    lastUpdated,
+    pagination: {
+      currentPage: page,
+      hasMoreDocuments,
+      totalDocumentsRetrieved: recentDocuments.length
+    }
+  };
 }

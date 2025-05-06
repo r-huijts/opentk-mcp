@@ -1,4 +1,5 @@
 import { BASE_URL } from '../config.js';
+import { extractOverviewFromHtml } from '../utils/html-parser.js';
 
 /**
  * Service for interacting with the tkconv API
@@ -182,7 +183,7 @@ export class ApiService {
           if (simplifiedQuery && simplifiedQuery !== sanitizedQuery) {
             // Retry with simplified query
             console.error(`Retrying search with simplified query: '${simplifiedQuery}'`);
-            
+
             // Use FormData for the retry as well
             const simplifiedFormData = new FormData();
             simplifiedFormData.append('q', simplifiedQuery);
@@ -542,6 +543,39 @@ export class ApiService {
     } catch (error) {
       console.error(`Error extracting person from HTML: ${(error as Error).message}`);
       return null;
+    }
+  }
+
+  /**
+   * Fetches overview data from the main tkconv page
+   * @param page The page number to retrieve (default: 1)
+   * @returns Overview data including recent documents and birthdays
+   */
+  async getOverview(page: number = 1): Promise<any> {
+    try {
+      // Validate page number
+      const validatedPage = Math.max(1, page);
+
+      // Fetch the HTML of the main page
+      const html = await this.fetchHtml("/");
+
+      // Extract overview data from the HTML with pagination
+      const overviewData = extractOverviewFromHtml(html, BASE_URL, validatedPage);
+
+      return overviewData;
+    } catch (error) {
+      console.error(`Error fetching overview: ${(error as Error).message}`);
+      return {
+        recentDocuments: [],
+        birthdays: [],
+        lastUpdated: new Date().toISOString(),
+        pagination: {
+          currentPage: page,
+          hasMoreDocuments: false,
+          totalDocumentsRetrieved: 0
+        },
+        error: (error as Error).message || 'Unknown error'
+      };
     }
   }
 }

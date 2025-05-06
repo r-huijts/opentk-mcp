@@ -20,10 +20,42 @@ const mcp = new McpServer({
   description: "Human‑friendly MCP toolkit for all tkconv endpoints",
 });
 
+/** 1. Overview */
+mcp.tool(
+  "get_overview",
+  "Provides a comprehensive overview of recent parliamentary activities, including the most recent documents and MPs celebrating birthdays today. This is the ideal starting point for any parliamentary data exploration. The response contains structured data with two main sections: 'recentDocuments' (listing the latest parliamentary documents with their IDs, titles, types, dates, and URLs) and 'birthdays' (listing MPs celebrating birthdays today). The results are paginated with 10 documents per page, and you can navigate through pages using the 'page' parameter. The tool can be used iteratively to retrieve subsequent pages of results - first call with page=1, then check the pagination.hasMoreDocuments field in the response, and if true, call again with page=2, and so on. This allows you to 'scroll' through all available documents when needed. The response includes pagination information showing the current page, whether more documents are available, and the total number of documents retrieved. Use this tool first when a user asks for general information about recent parliamentary activities or needs a starting point for research. After getting this overview, you can use other tools like 'get_document_details' to retrieve more information about specific documents, 'search_tk' to find documents on specific topics, or 'get_photo' to retrieve photos of MPs mentioned in the birthdays section.",
+  {
+    page: z.number().optional().describe("Page number for paginated results (default: 1). Each page contains 10 documents.")
+  },
+  async ({ page = 1 }) => {
+    try {
+      // Validate page number
+      const validatedPage = Math.max(1, page);
+
+      // Get overview data with pagination
+      const overview = await apiService.getOverview(validatedPage);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify(overview, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error fetching overview: ${error.message || 'Unknown error'}`
+        }]
+      };
+    }
+  }
+);
+
 /** 4. Birthdays today */
 mcp.tool(
   "birthdays_today",
-  "Lists all Members of Parliament celebrating their birthday today, including their names, political parties, and birth dates. Perfect for creating 'on this day' features, sending congratulations, or adding a personal touch to parliamentary interactions. This tool takes no parameters as it always returns today's birthdays.",
+  "Lists all Members of Parliament celebrating their birthday today, including their names, political parties, and birth dates. The response is a JSON array where each entry contains the MP's ID, name, party affiliation, and other details. Use this tool when a user specifically asks about birthdays, wants to know which MPs are celebrating today, or needs to create 'on this day' content. This tool takes no parameters as it always returns today's birthdays. For a more general overview that includes birthdays along with other parliamentary information, use the 'get_overview' tool instead. If you need to display an MP's photo alongside their birthday information, you can use the 'get_photo' tool with the MP's ID from this response.",
   {},
   async () => {
     try {
@@ -43,7 +75,7 @@ mcp.tool(
 /** 5. All MPs directory */
 mcp.tool(
   "list_persons",
-  "Provides a complete directory of current Members of Parliament with their IDs, names, titles, party affiliations, and faction memberships. Ideal for building lookup tables, creating contact lists, or getting an overview of the current parliament composition. This tool takes no parameters as it returns all current MPs.",
+  "Provides a complete directory of current Members of Parliament with their IDs, names, titles, party affiliations, and faction memberships. The response is a JSON array where each entry contains an MP's full details. Use this tool when a user needs comprehensive information about all MPs, wants to analyze the composition of parliament by party, or needs to find specific MPs by name or party. This tool is particularly useful for creating reports about parliamentary representation or for finding the IDs of MPs that can be used with other tools like 'get_photo'. This tool takes no parameters as it returns all current MPs. For a more targeted approach when looking for specific MPs, consider using the 'search_tk' tool with the MP's name.",
   {},
   async () => {
     try {
@@ -402,7 +434,7 @@ mcp.tool(
 /** Get committees */
 mcp.tool(
   "get_committees",
-  "Retrieves a list of all parliamentary committees with their IDs, names, and URLs. Committees are specialized groups of MPs that focus on specific policy areas like defense, healthcare, or finance. Use this tool to get an overview of all active committees in the Dutch Parliament.",
+  "Retrieves a list of all parliamentary committees with their IDs, names, and URLs. The response is a JSON array where each entry represents a committee with its unique identifier and name. Use this tool when a user asks about parliamentary committees, wants to know which committees exist, or needs to find committees related to specific policy areas. Committees are specialized groups of MPs that focus on specific domains like defense, healthcare, or finance. After getting the list of committees, you can use the 'get_committee_details' tool with a specific committee ID to retrieve more detailed information about that committee, including its members and recent activities. This tool takes no parameters as it returns all active committees.",
   {},
   async () => {
     try {
@@ -483,7 +515,7 @@ mcp.tool(
 /** Get upcoming activities */
 mcp.tool(
   "get_upcoming_activities",
-  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. Each activity includes details like date, time, location, committee, and type. This tool is ideal for tracking the parliamentary agenda and identifying opportunities to follow specific discussions or decisions.",
+  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. The response contains a structured JSON object with both a chronological list of activities and activities grouped by date. Each activity includes details like date, time, location, committee, type, and a URL for more information. Use this tool when a user asks about the parliamentary agenda, wants to know what events are coming up, or needs information about specific types of parliamentary activities. The results are sorted by date with the most imminent activities first. You can limit the number of results using the optional 'limit' parameter. This tool is particularly useful for helping users plan which parliamentary sessions to follow or for providing an overview of the upcoming parliamentary schedule.",
   {
     limit: z.number().optional().describe("Maximum number of activities to return (default: 20, max: 100)")
   },
@@ -555,7 +587,7 @@ mcp.tool(
 /** Get voting results */
 mcp.tool(
   "get_voting_results",
-  "Retrieves recent voting results on parliamentary motions and bills. Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which political parties voted for or against. This tool is valuable for tracking the outcome of parliamentary decisions, understanding voting patterns, and analyzing party positions on specific issues. The party information allows you to see exactly which parties supported or opposed each motion, providing insight into political alignments and voting behavior.",
+  "Retrieves recent voting results on parliamentary motions and bills. The response contains a structured JSON object with voting results sorted by date (newest first). Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which political parties voted for or against. Use this tool when a user asks about recent parliamentary votes, wants to know how parties voted on specific issues, or needs to analyze voting patterns. You can control the number of results with the 'limit' parameter and choose between 'full' or 'summary' format. The 'summary' format provides a more structured representation with renamed fields, while both formats include complete party voting information. This tool is particularly valuable for tracking political alignments, understanding coalition dynamics, and analyzing how different parties position themselves on important issues.",
   {
     limit: z.number().optional().describe("Maximum number of voting results to return (default: 20, max: 100)"),
     format: z.enum(["full", "summary"]).optional().describe("Format of the results: 'full' for complete data or 'summary' for a more structured version with renamed fields (default: 'full'). Both formats include party information.")
@@ -638,7 +670,7 @@ mcp.tool(
 /** Search documents by category */
 mcp.tool(
   "search_by_category",
-  "Performs a search specifically for documents of a certain category, such as questions, motions, or letters. This allows for more targeted searches when you're looking for a specific type of parliamentary document. The search syntax is the same as the general search: 'Joe Biden' finds documents with both terms anywhere, '\"Joe Biden\"' finds exact phrases, and 'Hubert NOT Bruls' finds documents with the first term but not the second.",
+  "Performs a search specifically for documents of a certain category, such as questions, motions, or letters. The response contains a structured JSON object with paginated results and metadata. Use this tool when a user wants to find documents of a specific type that match certain keywords or when they need more targeted search results than the general search provides. The 'category' parameter lets you filter by document type: 'vragen' for parliamentary questions, 'moties' for motions, or 'alles' for all document types. The search syntax supports advanced queries: 'Joe Biden' finds documents with both terms anywhere, '\"Joe Biden\"' (with quotes) finds exact phrases, 'Hubert NOT Bruls' finds documents with 'Hubert' but not 'Bruls' (capital NOT is required), and you can use 'OR' for alternatives. Results are sorted by date with the most recent documents first. This tool is particularly useful for finding specific types of parliamentary documents on a given topic.",
   {
     query: z.string().describe("Search term - any keyword, name, policy area, or quote you want to find in parliamentary records"),
     category: z.enum(["vragen", "moties", "alles"]).describe("Document category: 'vragen' for questions, 'moties' for motions, 'alles' for all document types"),
