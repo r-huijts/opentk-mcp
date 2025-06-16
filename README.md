@@ -41,24 +41,48 @@ The project leverages Bert Hubert's tkconv service as its primary data source, w
 
 ## Installation
 
-### 1. Using Claude Desktop with NPM Package
-Update your Claude configuration file (~/Library/Application Support/Claude/claude_desktop_config.json):
+### 1. Quick Start with NPM Package (Recommended)
 
+The fastest way to get started is using the published npm package:
+
+```bash
+npx @r-huijts/opentk-mcp
 ```
+
+### 2. Using Claude Desktop with NPM Package
+
+Update your Claude configuration file (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
 {
   "mcpServers": {
-    "opentk-mcp": {
+    "opentk": {
       "command": "npx",
       "args": [
         "-y",
-        "opentk-mcp"
+        "@r-huijts/opentk-mcp"
       ]
     }
   }
 }
 ```
 
-### 2. From Source
+**Alternative configurations:**
+
+For MultiServerMCPClient (Python):
+```python
+mcp_client = MultiServerMCPClient({
+    "opentk": {
+        "command": "npx",
+        "args": ["-y", "@r-huijts/opentk-mcp"],
+        "transport": "stdio",
+    }
+})
+```
+
+### 3. From Source (Development)
+
+If you want to modify the code or contribute to development:
 
 **Clone Repository:**
 ```bash
@@ -81,14 +105,14 @@ npm run build
 npm start
 ```
 
-### 2. Configure Claude Desktop
+**Configure Claude Desktop for local development:**
 
 Update your Claude configuration file:
 
 ```json
 {
   "mcpServers": {
-    "opentk-mcp-local": {
+    "opentk-local": {
       "command": "node",
       "args": [
         "/absolute/path/to/your/opentk-mcp/dist/index.js"
@@ -99,6 +123,17 @@ Update your Claude configuration file:
 ```
 
 Make sure to replace `/absolute/path/to/your/opentk-mcp/` with the actual path to your installation.
+
+### 4. Publishing (for maintainers)
+
+To publish a new version of the scoped package:
+
+```bash
+npm run build
+npm publish --access=public
+```
+
+Note: Scoped packages require the `--access=public` flag to be publicly available.
 
 ## Search Functionality
 

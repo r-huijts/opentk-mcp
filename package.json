@@ -1,11 +1,15 @@
 {
-  "name": "opentk-mcp",
-  "version": "1.0.6",
-  "description": "OpenTK Model Context Protocol Server",
+  "name": "@r-huijts/opentk-mcp",
+  "version": "1.0.8",
+  "description": "MCP server for Dutch parliamentary data access via OpenTK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "opentk-mcp": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod +x dist/index.js",
     "build:watch": "tsc --watch",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
@@ -19,12 +23,19 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "parliament",
     "dutch",
+    "tweede-kamer",
     "opendata",
-    "ai"
+    "ai",
+    "llm",
+    "claude",
+    "government",
+    "politics",
+    "tkconv"
   ],
-  "author": "",
+  "author": "r-huijts",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

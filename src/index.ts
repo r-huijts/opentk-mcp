@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -16,7 +18,7 @@ import { Buffer } from "buffer";
 
 const mcp = new McpServer({
   name: "opentk",
-  version: "1.0.6",
+  version: "1.0.8",
   description: "Human‑friendly MCP toolkit for all tkconv endpoints",
 });
 
@@ -894,7 +896,7 @@ mcp.tool(
 // ———————————————————————————————————————————————
 // Boot up the MCP server
 async function main() {
-  console.error("Starting OpenTK MCP server (v1.0.6)…");
+  console.error("Starting OpenTK MCP server (v1.0.8)…");
   await mcp.connect(new StdioServerTransport());
 }
 main().catch((e) => {
