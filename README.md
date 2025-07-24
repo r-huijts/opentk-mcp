@@ -3,7 +3,11 @@
 > **Important Attribution**: This MCP server is built as a wrapper around the excellent [OpenTK project](https://berthub.eu/tkconv/) created by [Bert Hubert](https://berthub.eu/). The OpenTK project provides unprecedented access to Dutch parliamentary data through a user-friendly interface. Learn more about the project in Bert's article: [Welkom bij OpenTK](https://berthub.eu/articles/posts/welkom-bij-opentk/). All credit for the underlying data access and processing goes to Bert Hubert and his contributions to open government data.
 
 A bridge between large language models (LLMs) and Dutch parliamentary data through a standardized interface. This MCP server provides access to Dutch parliamentary documents, debates, and member information from the Tweede Kamer.
- 
+
+<a href="https://glama.ai/mcp/servers/@r-huijts/opentk-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@r-huijts/opentk-mcp/badge" alt="OpenTK Model Context Protocol Server MCP server" />
+</a>
+
 ## Real-World Natural Language Interaction Examples
 
 ## Example 1: Comparing Party Positions on AI Policies
@@ -23,7 +27,6 @@ User Query: "Which MPs currently serve on both the Finance Committee and the Eco
 
 ## Example 6: Identifying Upcoming Parliamentary Activities on Digital Security
 User Query: "Are there any scheduled committee meetings or debates about cybersecurity and digital infrastructure planned for the next month? Which ministers will be participating and what specific topics will be addressed?"
-
 
 ## Project Concept
 
@@ -169,6 +172,5 @@ MIT
 ## Conclusion
 
 The OpenTK MCP server provides a robust and well-structured interface to Dutch parliamentary data, making it accessible to AI assistants through the Model Context Protocol. Its modular design, comprehensive API, and thorough testing ensure reliable access to parliamentary information for AI-assisted research, analysis, and information retrieval.
-
 
 Once configured, Claude will be able to access Dutch parliamentary data through the OpenTK MCP server. The server exposes all the tools described in the [Usage](#usage) section above.
