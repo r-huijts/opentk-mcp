@@ -85,7 +85,7 @@
   ],
   "license": "MIT",
   "compatibility": {
-    "claude_desktop": ">=1.0.0",
+    "claude_desktop": ">=0.10.0",
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {
       "node": ">=16.0.0"
