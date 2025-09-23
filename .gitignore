@@ -26,3 +26,8 @@ yarn-error.log*
 # OS specific
 .DS_Store
 Thumbs.db
+
+# MCP build artifacts
+*.mcpb
+.DS_Store
+Thumbs.db

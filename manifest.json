@@ -1,0 +1,94 @@
+{
+  "manifest_version": "0.2",
+  "name": "opentk-mcp",
+  "display_name": "OpenTK Parliamentary Data Server",
+  "version": "1.0.8",
+  "description": "Access Dutch parliamentary data including debates, documents, and member information through OpenTK",
+  "long_description": "A comprehensive MCP server providing access to Dutch parliamentary data through a standardized interface. Built as a wrapper around Bert Hubert's excellent OpenTK project, this server enables AI assistants to search, retrieve, and analyze parliamentary documents, debates, and member information from the Tweede Kamer.\n\nFeatures include:\n- Search parliamentary documents with advanced query capabilities\n- Access MP information and committee memberships\n- Retrieve full document content in various formats\n- Track legislative cases and government activities\n- Real-time access to parliamentary proceedings\n\nPerfect for researchers, journalists, political analysts, and anyone interested in Dutch politics and governance.",
+  "author": {
+    "name": "r-huijts",
+    "url": "https://github.com/r-huijts/opentk-mcp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/r-huijts/opentk-mcp"
+  },
+  "homepage": "https://github.com/r-huijts/opentk-mcp",
+  "documentation": "https://github.com/r-huijts/opentk-mcp#readme",
+  "support": "https://github.com/r-huijts/opentk-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "get_overview",
+      "description": "Get comprehensive overview of recent parliamentary activities and MP birthdays"
+    },
+    {
+      "name": "search_tk",
+      "description": "Search parliamentary documents with advanced query capabilities"
+    },
+    {
+      "name": "get_document_details",
+      "description": "Retrieve detailed information about specific parliamentary documents"
+    },
+    {
+      "name": "get_document_content",
+      "description": "Get full content of parliamentary documents (PDF, Word, HTML)"
+    },
+    {
+      "name": "get_mp_info",
+      "description": "Access comprehensive information about Members of Parliament"
+    },
+    {
+      "name": "get_photo",
+      "description": "Retrieve official photos of MPs and government officials"
+    },
+    {
+      "name": "get_committees",
+      "description": "List parliamentary committees and their memberships"
+    },
+    {
+      "name": "get_committee_details",
+      "description": "Get detailed information about specific committees"
+    },
+    {
+      "name": "get_pledges",
+      "description": "Access government pledges and commitments"
+    },
+    {
+      "name": "get_cases",
+      "description": "Retrieve information about legislative cases and procedures"
+    }
+  ],
+  "tools_generated": true,
+  "keywords": [
+    "parliament",
+    "dutch",
+    "politics",
+    "government",
+    "tweede-kamer",
+    "research",
+    "documents",
+    "debates",
+    "OpenTK",
+    "parliamentary-data"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=16.0.0"
+    }
+  }
+}

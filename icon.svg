@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#2563eb"/>
+  
+  <!-- Parliament building silhouette -->
+  <g fill="#ffffff">
+    <!-- Main building base -->
+    <rect x="16" y="38" width="32" height="16" rx="1"/>
+    
+    <!-- Central dome -->
+    <circle cx="32" cy="30" r="8" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="30" y="22" width="4" height="16"/>
+    <polygon points="32,18 28,22 36,22"/>
+    
+    <!-- Side pillars -->
+    <rect x="20" y="28" width="2" height="10"/>
+    <rect x="24" y="26" width="2" height="12"/>
+    <rect x="38" y="26" width="2" height="12"/>
+    <rect x="42" y="28" width="2" height="10"/>
+    
+    <!-- Steps -->
+    <rect x="18" y="50" width="28" height="2" opacity="0.8"/>
+    <rect x="20" y="48" width="24" height="2" opacity="0.6"/>
+  </g>
+  
+  <!-- Dutch flag accent -->
+  <rect x="48" y="12" width="8" height="6" fill="#ae1c28"/>
+  <rect x="48" y="12" width="8" height="2" fill="#21468b"/>
+  <rect x="48" y="16" width="8" height="2" fill="#ffffff"/>
+</svg>
