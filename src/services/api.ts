@@ -1,10 +1,29 @@
 import { BASE_URL } from '../config.js';
 import { extractOverviewFromHtml } from '../utils/html-parser.js';
+import https from 'https';
+
+/**
+ * Extended RequestInit to support Node.js-specific options like agent
+ */
+interface NodeRequestInit extends RequestInit {
+  agent?: https.Agent;
+}
 
 /**
  * Service for interacting with the tkconv API
  */
 export class ApiService {
+  /**
+   * Static HTTPS agent for connection pooling
+   * Reuses connections across requests for better performance
+   */
+  private static agent = new https.Agent({
+    keepAlive: true,
+    keepAliveMsecs: 30000, // Keep connections alive for 30 seconds
+    maxSockets: 10, // Maximum 10 concurrent connections
+    maxFreeSockets: 5, // Keep up to 5 idle connections ready
+    timeout: 60000 // 60 second socket timeout
+  });
   /**
    * Fetches JSON data from the API
    * @param path The API path to fetch
@@ -25,8 +44,9 @@ export class ApiService {
 
       const res = await fetch(`${BASE_URL}${normalizedPath}`, {
         ...options,
-        headers
-      });
+        headers,
+        agent: ApiService.agent
+      } as NodeRequestInit);
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -73,8 +93,9 @@ export class ApiService {
 
       const res = await fetch(`${BASE_URL}${normalizedPath}`, {
         ...options,
-        headers
-      });
+        headers,
+        agent: ApiService.agent
+      } as NodeRequestInit);
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -107,8 +128,9 @@ export class ApiService {
 
       const res = await fetch(`${BASE_URL}${normalizedPath}`, {
         ...options,
-        headers
-      });
+        headers,
+        agent: ApiService.agent
+      } as NodeRequestInit);
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -161,7 +183,8 @@ export class ApiService {
           'sec-ch-ua-platform': '"macOS"'
         },
         body: formData, // Pass FormData object directly
-      });
+        agent: ApiService.agent
+      } as NodeRequestInit);
 
       if (!res.ok) {
         // If we get a 500 error, try to use a simplified query instead
@@ -207,8 +230,9 @@ export class ApiService {
                   'sec-ch-ua-mobile': '?0',
                   'sec-ch-ua-platform': '"macOS"'
                 },
-                body: simplifiedFormData // Pass FormData object
-              });
+                body: simplifiedFormData, // Pass FormData object
+                agent: ApiService.agent
+              } as NodeRequestInit);
 
               if (retryRes.ok) {
                 const retryText = await retryRes.text();
@@ -291,8 +315,9 @@ export class ApiService {
           redirect: "manual",
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; OpenTK-MCP/1.0)'
-          }
-        });
+          },
+          agent: ApiService.agent
+        } as NodeRequestInit);
 
         // Even if the response is not OK, we still want to check for a location header
         const location = res.headers.get("location") || "";
@@ -356,8 +381,9 @@ export class ApiService {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; OpenTK-MCP/1.0)'
         },
+        agent: ApiService.agent
         // We would add timeout here, but it's not supported in the RequestInit type
-      });
+      } as NodeRequestInit);
 
       if (!res.ok) {
         // For 404 errors, return an empty array instead of failing

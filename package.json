@@ -1,6 +1,6 @@
 {
   "name": "@r-huijts/opentk-mcp",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "MCP server for Dutch parliamentary data access via OpenTK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
