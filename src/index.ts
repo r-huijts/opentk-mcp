@@ -18,7 +18,7 @@ import { Buffer } from "buffer";
 
 const mcp = new McpServer({
   name: "opentk",
-  version: "1.0.8",
+  version: "1.0.10",
   description: "Human‑friendly MCP toolkit for all tkconv endpoints",
 });
 
@@ -877,8 +877,6 @@ mcp.tool(
         }]
       };
     } catch (error: any) {
-      console.error(`Error in get_document_content: ${error.message}`);
-      console.error(error.stack);
       return {
         content: [{
           type: "text",
@@ -896,7 +894,7 @@ mcp.tool(
 // ———————————————————————————————————————————————
 // Boot up the MCP server
 async function main() {
-  console.error("Starting OpenTK MCP server (v1.0.8)…");
+  console.error("Starting OpenTK MCP server (v1.0.10)…");
   await mcp.connect(new StdioServerTransport());
 }
 main().catch((e) => {

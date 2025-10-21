@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "opentk-mcp",
   "display_name": "OpenTK Parliamentary Data Server",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Access Dutch parliamentary data including debates, documents, and member information through OpenTK",
   "long_description": "A comprehensive MCP server providing access to Dutch parliamentary data through a standardized interface. Built as a wrapper around Bert Hubert's excellent OpenTK project, this server enables AI assistants to search, retrieve, and analyze parliamentary documents, debates, and member information from the Tweede Kamer.\n\nFeatures include:\n- Search parliamentary documents with advanced query capabilities\n- Access MP information and committee memberships\n- Retrieve full document content in various formats\n- Track legislative cases and government activities\n- Real-time access to parliamentary proceedings\n\nPerfect for researchers, journalists, political analysts, and anyone interested in Dutch politics and governance.",
   "author": {

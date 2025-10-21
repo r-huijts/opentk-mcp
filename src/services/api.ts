@@ -56,7 +56,6 @@ export class ApiService {
 
       // Check if the response is HTML
       if (text.trim().startsWith('<!DOCTYPE')) {
-        console.error(`The API returned HTML instead of JSON for path: ${normalizedPath}`);
         return {} as T;
       }
 
@@ -64,11 +63,9 @@ export class ApiService {
       try {
         return JSON.parse(text) as T;
       } catch (error) {
-        console.error(`Failed to parse JSON for path: ${normalizedPath}`, error);
         return {} as T;
       }
     } catch (error) {
-      console.error(`Error fetching JSON: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -103,7 +100,6 @@ export class ApiService {
 
       return await res.text();
     } catch (error) {
-      console.error(`Error fetching HTML: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -141,7 +137,6 @@ export class ApiService {
 
       return { data, contentType };
     } catch (error) {
-      console.error(`Error fetching binary data: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -192,7 +187,6 @@ export class ApiService {
           // API returned 500 error - let's investigate before simplifying
           let actualErrorContent = await res.text().catch(() => "Could not read error response body");
           let errorMessage = `Initial request failed with 500: ${res.statusText}. Response: ${actualErrorContent.substring(0, 200)}...`; // Limit length
-          console.error(errorMessage); // Log the initial error details
 
           // Optional: Try simplifying only if the error content suggests it,
           // otherwise, maybe just report the initial 500 error.
@@ -205,7 +199,6 @@ export class ApiService {
 
           if (simplifiedQuery && simplifiedQuery !== sanitizedQuery) {
             // Retry with simplified query
-            console.error(`Retrying search with simplified query: '${simplifiedQuery}'`);
 
             // Use FormData for the retry as well
             const simplifiedFormData = new FormData();
@@ -239,31 +232,25 @@ export class ApiService {
                 // Check for HTML in retry response too
                 if (retryText.trim().startsWith('<!DOCTYPE')) {
                    retryErrorMessage = "Retry attempt returned HTML instead of JSON.";
-                   console.error(retryErrorMessage);
                 } else {
                   try {
                     const retryData = JSON.parse(retryText);
-                    console.error(`Successfully retrieved results with simplified query: '${simplifiedQuery}'. Original query failed.`);
                     // Return only the parsed data, matching the expected type T
                     return retryData as T;
                   } catch (e) {
                     retryErrorMessage = `Retry succeeded but failed to parse JSON response: ${e instanceof Error ? e.message : String(e)}. Response: ${retryText.substring(0, 200)}...`;
-                    console.error(retryErrorMessage);
                   }
                 }
               } else {
                 // Capture retry failure details
                 const retryErrorBody = await retryRes.text().catch(() => "Could not read retry error body");
                 retryErrorMessage = `Retry with simplified query failed with status: ${retryRes.status} ${retryRes.statusText}. Response: ${retryErrorBody.substring(0, 200)}...`;
-                console.error(retryErrorMessage);
               }
             } catch (retryFetchError) {
                  retryErrorMessage = `Fetch error during retry attempt: ${retryFetchError instanceof Error ? retryFetchError.message : String(retryFetchError)}`;
-                 console.error(retryErrorMessage);
             }
           } else {
              retryErrorMessage = "Original query was already simple; retry not attempted.";
-             console.error(retryErrorMessage);
           }
 
           // If retry failed or wasn't applicable, return empty results with a more informative error
@@ -336,7 +323,7 @@ export class ApiService {
           return location;
         }
       } catch (directError) {
-        console.error(`Direct external reference resolution failed: ${(directError as Error).message}`);
+        // Direct approach failed, continue to HTML approach
       }
 
       // If the direct approach failed, try to get the document page and extract the link
@@ -355,13 +342,12 @@ export class ApiService {
           return anyLinkMatch[1];
         }
       } catch (htmlError) {
-        console.error(`HTML approach for external reference failed: ${(htmlError as Error).message}`);
+        // HTML approach failed, continue to fallback
       }
 
       // If all else fails, construct a link to the document page
       return `${BASE_URL}/document.html?nummer=${encodeURIComponent(sanitizedExtId)}`;
     } catch (error) {
-      console.error(`Error resolving external reference: ${(error as Error).message}`);
       // Return a fallback URL to the document page
       return `${BASE_URL}/document.html?nummer=${encodeURIComponent(extId)}`;
     }
@@ -388,7 +374,6 @@ export class ApiService {
       if (!res.ok) {
         // For 404 errors, return an empty array instead of failing
         if (res.status === 404) {
-          console.error(`Sitemap not found: ${sanitizedPath}`);
           return [];
         }
         throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -398,13 +383,11 @@ export class ApiService {
 
       // Check if the response is HTML (which would be an error for a sitemap)
       if (text.trim().startsWith('<!DOCTYPE')) {
-        console.error(`The API returned HTML instead of a sitemap for path: ${sanitizedPath}`);
         return [];
       }
 
       return text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
     } catch (error) {
-      console.error(`Error fetching sitemap: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -422,7 +405,6 @@ export class ApiService {
 
       return persons;
     } catch (error) {
-      console.error(`Error fetching persons: ${(error as Error).message}`);
       return [];
     }
   }
@@ -441,7 +423,6 @@ export class ApiService {
       const tableMatch = tableRegex.exec(html);
 
       if (!tableMatch || !tableMatch[1]) {
-        console.error("Could not find MP table in HTML");
         return [];
       }
 
@@ -504,7 +485,6 @@ export class ApiService {
 
       return persons;
     } catch (error) {
-      console.error(`Error extracting persons from HTML: ${(error as Error).message}`);
       return [];
     }
   }
@@ -524,7 +504,6 @@ export class ApiService {
 
       return person;
     } catch (error) {
-      console.error(`Error fetching person with ID ${id}: ${(error as Error).message}`);
       return null;
     }
   }
@@ -567,7 +546,6 @@ export class ApiService {
         }
       };
     } catch (error) {
-      console.error(`Error extracting person from HTML: ${(error as Error).message}`);
       return null;
     }
   }
@@ -590,7 +568,6 @@ export class ApiService {
 
       return overviewData;
     } catch (error) {
-      console.error(`Error fetching overview: ${(error as Error).message}`);
       return {
         recentDocuments: [],
         birthdays: [],

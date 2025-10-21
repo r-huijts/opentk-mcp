@@ -32,7 +32,6 @@ export async function extractTextFromPdf(data: ArrayBuffer): Promise<string> {
 
     return extractedText;
   } catch (error) {
-    console.error(`Error extracting text from PDF: ${(error as Error).message}`);
     return 'Failed to extract text from the PDF document. This might be due to the document structure, content format, or encryption. Please download the original document for full content.';
   }
 }
@@ -62,7 +61,6 @@ export async function extractTextFromDocx(data: ArrayBuffer): Promise<string> {
 
     return extractedText;
   } catch (error) {
-    console.error(`Error extracting text from DOCX: ${(error as Error).message}`);
     return 'Failed to extract text from the DOCX document. This might be due to the document structure or content format. Please download the original document for full content.';
   }
 }
