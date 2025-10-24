@@ -995,7 +995,7 @@ mcp.tool(
             occurrences: occurrences,
             usageInstructions: {
               nextStep: "Use get_document_content with specific character offsets to retrieve relevant sections",
-              example: `get_document_content({docId: '${docId}', offset: ${occurrences.length > 0 ? occurrences[0].characterOffset : 0}})`,
+              example: `get_document_content({docId: '${docId}', offset: ${occurrences.length > 0 ? occurrences[0]?.characterOffset ?? 0 : 0}})`,
               note: "Each occurrence includes a characterOffset that you can use with get_document_content to read that specific section"
             },
             documentLink: details?.directLinkPdf || null

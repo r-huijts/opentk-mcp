@@ -2,9 +2,9 @@
   "manifest_version": "0.2",
   "name": "opentk-mcp",
   "display_name": "OpenTK Parliamentary Data Server",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Access Dutch parliamentary data including debates, documents, and member information through OpenTK",
-  "long_description": "A comprehensive MCP server providing access to Dutch parliamentary data through a standardized interface. Built as a wrapper around Bert Hubert's excellent OpenTK project, this server enables AI assistants to search, retrieve, and analyze parliamentary documents, debates, and member information from the Tweede Kamer.\n\nFeatures include:\n- Search parliamentary documents with advanced query capabilities\n- Access MP information and committee memberships\n- Retrieve full document content in various formats\n- Track legislative cases and government activities\n- Real-time access to parliamentary proceedings\n\nPerfect for researchers, journalists, political analysts, and anyone interested in Dutch politics and governance.",
+  "long_description": "A comprehensive MCP server providing access to Dutch parliamentary data through a standardized interface. Built as a wrapper around Bert Hubert's excellent OpenTK project, this server enables AI assistants to search, retrieve, and analyze parliamentary documents, debates, and member information from the Tweede Kamer.\n\nFeatures include:\n- Search parliamentary documents with advanced query capabilities\n- Access MP information and committee memberships\n- Retrieve full document content in various formats\n- Track legislative cases and government activities\n- Real-time access to parliamentary proceedings\n- Find person occurrences in documents with fuzzy matching\n\nPerfect for researchers, journalists, political analysts, and anyone interested in Dutch politics and governance.",
   "author": {
     "name": "r-huijts",
     "email": "r-huijts@example.com",
@@ -63,6 +63,10 @@
       "description": "Get full content of parliamentary documents (PDF, Word, HTML)"
     },
     {
+      "name": "find_person_in_document",
+      "description": "Find all occurrences of a person's name in parliamentary documents with fuzzy matching"
+    },
+    {
       "name": "list_persons",
       "description": "Access comprehensive information about Members of Parliament"
     },
@@ -97,7 +101,9 @@
     "documents",
     "debates",
     "OpenTK",
-    "parliamentary-data"
+    "parliamentary-data",
+    "person-search",
+    "fuzzy-matching"
   ],
   "license": "MIT"
 }
