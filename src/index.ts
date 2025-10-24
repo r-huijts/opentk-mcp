@@ -1020,7 +1020,7 @@ mcp.tool(
 // ———————————————————————————————————————————————
 // Boot up the MCP server
 async function main() {
-  console.error("Starting OpenTK MCP server (v1.0.10)…");
+  console.error("Starting OpenTK MCP server (v1.0.11)…");
   await mcp.connect(new StdioServerTransport());
 }
 main().catch((e) => {
