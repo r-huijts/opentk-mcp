@@ -13,7 +13,7 @@ import {
   extractActivitiesFromHtml,
   extractVotingResultsFromHtml
 } from './utils/html-parser.js';
-import { extractTextFromPdf, extractTextFromDocx, summarizeText } from './utils/document-extractor.js';
+import { extractTextFromPdf, extractTextFromDocx, summarizeText, findPersonOccurrences } from './utils/document-extractor.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
@@ -882,6 +882,132 @@ mcp.tool(
           type: "text",
           text: JSON.stringify({
             error: `Error extracting document content: ${error.message || 'Unknown error'}`,
+            suggestion: "Try using get_document_details to verify the document exists and is accessible.",
+            documentLink: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
+/** Find person occurrences in document */
+mcp.tool(
+  "find_person_in_document",
+  "Searches for all occurrences of a person's name within a parliamentary document and returns their precise locations. This tool is essential for efficiently navigating large documents when you need to find where a specific person speaks, is mentioned, or is referenced. Instead of loading an entire bulky document into the context window, use this tool first to identify the exact sections where the person appears.\n\nThe tool uses fuzzy matching, so you don't need the person's full name:\n- Searching for \"Wilders\" will find \"Geert Wilders\", \"de heer Wilders\", \"Minister Wilders\", etc.\n- Searching for \"Rutte\" will find \"Mark Rutte\", \"Premier Rutte\", \"Minister-president Rutte\", etc.\n- Searching for \"Van der\" will find \"Van der Staaij\", \"Van der Plas\", etc.\n\nThe response includes:\n- Total number of occurrences found\n- For each occurrence:\n  - Line range (e.g., lines 45-47) showing where in the document the name appears\n  - Character offset in the full document text\n  - A brief snippet (preview) of the surrounding text to verify it's the right context\n  \nUse this tool in a two-step workflow:\n1. First, call `find_person_in_document` to locate where the person appears in the document\n2. Then, call `get_document_content` with the character offset from step 1 to retrieve only the relevant sections\n\nThis approach dramatically reduces context window usage by avoiding the need to load entire documents when searching for specific speakers or mentions. It's particularly valuable for debate transcripts, committee meetings, and other lengthy parliamentary documents where multiple people speak.\n\nExample workflow:\n- Call: find_person_in_document({docId: \"2025D18220\", personName: \"Wilders\"})\n- Get response: Found 8 occurrences at lines 45-47, 123-125, 230-232, etc.\n- Review snippets to identify which sections are relevant\n- Call: get_document_content({docId: \"2025D18220\", offset: 5234}) to read the specific section starting at character position 5234\n\nWhen to use this tool:\n- When a user asks \"What did [person] say in this document?\"\n- When searching for a specific speaker's contributions to a debate\n- When analyzing how often someone is mentioned in parliamentary proceedings\n- Before retrieving document content, to avoid loading unnecessary text",
+  {
+    docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to search in"),
+    personName: z.string().describe("Name or part of a name to search for - can be a first name, last name, or full name. The tool uses fuzzy matching, so partial names work well (e.g., 'Wilders' will find 'Geert Wilders', 'de heer Wilders', etc.)")
+  },
+  async ({ docId, personName }) => {
+    try {
+      // First try to get the document page to extract the link
+      const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
+
+      // Check if the document exists
+      if (html.includes('Found nothing in document.html!!')) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Get document details for metadata
+      const details = extractDocumentDetailsFromHtml(html, BASE_URL);
+
+      // Extract the document link
+      const documentLink = extractDocumentLink(html);
+
+      if (documentLink === 'NOT_FOUND') {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      } else if (!documentLink) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Could not find document link for document ${docId}`,
+              suggestion: "The document exists but no download link was found. Try using get_document_details to verify the document ID is correct.",
+              documentUrl: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Download the document
+      const { data, contentType } = await apiService.fetchBinary(`/${documentLink}`);
+
+      // Extract text based on document type
+      let extractedText = '';
+      let documentType = '';
+
+      if (contentType.includes('pdf')) {
+        // Handle PDF documents using pdf-parse library
+        extractedText = await extractTextFromPdf(data);
+        documentType = 'PDF';
+      } else if (contentType.includes('wordprocessingml.document') || contentType.includes('msword') || documentLink.endsWith('.docx') || documentLink.endsWith('.doc')) {
+        // Handle Word documents (DOCX/DOC) using mammoth library
+        extractedText = await extractTextFromDocx(data);
+        documentType = 'Word';
+      } else {
+        // Unsupported document type
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Unsupported document type (content type: ${contentType})`,
+              suggestion: "This tool currently only supports PDF and Word (DOCX) documents.",
+              documentLink: details?.directLinkPdf || null
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Find person occurrences in the extracted text
+      const occurrences = findPersonOccurrences(extractedText, personName);
+
+      // Return the results with metadata and usage suggestions
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            docId,
+            title: details?.title || "Unknown title",
+            type: details?.type || "Unknown type",
+            date: details?.datum || "Unknown date",
+            documentFormat: documentType,
+            searchTerm: personName,
+            totalOccurrences: occurrences.length,
+            occurrences: occurrences,
+            usageInstructions: {
+              nextStep: "Use get_document_content with specific character offsets to retrieve relevant sections",
+              example: `get_document_content({docId: '${docId}', offset: ${occurrences.length > 0 ? occurrences[0].characterOffset : 0}})`,
+              note: "Each occurrence includes a characterOffset that you can use with get_document_content to read that specific section"
+            },
+            documentLink: details?.directLinkPdf || null
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: `Error searching for person in document: ${error.message || 'Unknown error'}`,
             suggestion: "Try using get_document_details to verify the document exists and is accessible.",
             documentLink: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
           }, null, 2)

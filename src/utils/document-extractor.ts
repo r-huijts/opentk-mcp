@@ -112,3 +112,136 @@ export function summarizeText(text: string, maxLength: number = 8000, offset: nu
     remainingLength
   };
 }
+
+/**
+ * Interface for person occurrence results
+ */
+export interface PersonOccurrence {
+  lineStart: number;
+  lineEnd: number;
+  characterOffset: number;
+  snippet: string;
+  context: string;
+}
+
+/**
+ * Finds all occurrences of a person's name in document text using fuzzy matching
+ * @param text The full document text to search in
+ * @param personName The name or part of a name to search for
+ * @returns Array of occurrence objects with location and context information
+ */
+export function findPersonOccurrences(text: string, personName: string): PersonOccurrence[] {
+  if (!text || !personName) {
+    return [];
+  }
+
+  const occurrences: PersonOccurrence[] = [];
+  
+  // Split text into lines for line number tracking
+  const lines = text.split(/\r?\n/);
+  
+  // Normalize the search name for fuzzy matching
+  const normalizedSearchName = normalizeText(personName);
+  
+  // Track character positions for each line
+  let currentCharOffset = 0;
+  const lineOffsets: number[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    lineOffsets.push(currentCharOffset);
+    const line = lines[i];
+    if (line) {
+      currentCharOffset += line.length + 1; // +1 for newline character
+    }
+  }
+
+  // Search through each line for fuzzy matches
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
+    if (!line) continue;
+    
+    const normalizedLine = normalizeText(line);
+    
+    // Check if the normalized line contains the normalized search name
+    if (normalizedLine.includes(normalizedSearchName)) {
+      // Find the actual position in the original line
+      const matchIndex = findFuzzyMatch(line, personName);
+      
+      if (matchIndex !== -1) {
+        const lineOffset = lineOffsets[lineIndex];
+        if (lineOffset !== undefined) {
+          const characterOffset = lineOffset + matchIndex;
+          
+          // Create snippet (30 chars before and after the match)
+          const snippetStart = Math.max(0, matchIndex - 30);
+          const snippetEnd = Math.min(line.length, matchIndex + personName.length + 30);
+          const snippet = line.substring(snippetStart, snippetEnd);
+        
+          // Create context (2 lines before and after)
+          const contextStart = Math.max(0, lineIndex - 2);
+          const contextEnd = Math.min(lines.length, lineIndex + 3);
+          const context = lines.slice(contextStart, contextEnd).join('\n');
+          
+          occurrences.push({
+            lineStart: lineIndex + 1, // Convert to 1-based line numbers
+            lineEnd: lineIndex + 1,
+            characterOffset,
+            snippet: snippet.trim(),
+            context: context.trim()
+          });
+        }
+      }
+    }
+  }
+
+  return occurrences;
+}
+
+/**
+ * Normalizes text for fuzzy matching by removing accents, converting to lowercase, and cleaning up whitespace
+ * @param text The text to normalize
+ * @returns Normalized text
+ */
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
+    .replace(/[^\w\s]/g, ' ') // Replace punctuation with spaces
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
+/**
+ * Finds the position of a fuzzy match in the original text
+ * @param originalText The original text to search in
+ * @param searchName The name to search for
+ * @returns The character index of the match, or -1 if not found
+ */
+function findFuzzyMatch(originalText: string, searchName: string): number {
+  const normalizedOriginal = normalizeText(originalText);
+  const normalizedSearch = normalizeText(searchName);
+  
+  const index = normalizedOriginal.indexOf(normalizedSearch);
+  if (index === -1) {
+    return -1;
+  }
+  
+  // Find the corresponding position in the original text
+  let originalIndex = 0;
+  let normalizedIndex = 0;
+  
+  while (normalizedIndex < index && originalIndex < originalText.length) {
+    const char = originalText[originalIndex];
+    if (char) {
+      const normalizedChar = normalizeText(char);
+      
+      if (normalizedChar.length > 0) {
+        normalizedIndex += normalizedChar.length;
+      }
+    }
+    originalIndex++;
+  }
+  
+  return originalIndex;
+}
