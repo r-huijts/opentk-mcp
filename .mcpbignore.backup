@@ -1,8 +1,9 @@
 # MCPB Bundle Ignore File
 # Exclude development and build artifacts
 
-# Dependencies
+# Dependencies (but keep MCP SDK)
 node_modules/
+!node_modules/@modelcontextprotocol/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
