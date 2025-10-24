@@ -13,7 +13,7 @@ import {
   extractActivitiesFromHtml,
   extractVotingResultsFromHtml
 } from './utils/html-parser.js';
-import { extractTextFromPdf, extractTextFromDocx, summarizeText, findPersonOccurrences } from './utils/document-extractor.js';
+import { extractTextFromPdf, extractTextFromDocx, summarizeText, findPersonOccurrences, findParagraphStart, findParagraphEnd } from './utils/document-extractor.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
@@ -767,12 +767,13 @@ mcp.tool(
 /** Get document content */
 mcp.tool(
   "get_document_content",
-  "Downloads a parliamentary document and extracts its text content for use in the conversation. This tool retrieves the actual content of a document based on its ID, making it available for analysis, summarization, or direct reference in the conversation. The text is extracted from PDF or Word (DOCX) documents using professional libraries and returned in a readable format.\n\nIMPORTANT: For longer documents, the content may be truncated. The response includes pagination information to help you retrieve the complete document:\n\n- isTruncated: Indicates whether there is more content available\n- totalLength: The total length of the document content\n- currentOffset: The starting position of the current content chunk\n- nextOffset: The starting position for the next content chunk (use this as the 'offset' parameter in your next call)\n- remainingLength: The amount of content remaining after the current chunk\n\nTo retrieve the complete document, you can make multiple calls to this tool, incrementing the offset each time:\n\nExample usage:\n1. First call: get_document_content({docId: '2025D18220'})\n2. If the response shows isTruncated=true, call again with the nextOffset value:\n   get_document_content({docId: '2025D18220', offset: 8000})\n3. Continue until isTruncated=false or you've retrieved all the content you need.\n\nThis pagination approach allows you to analyze even very long documents within the conversation context.\n\nUse this tool when you need to analyze or discuss the specific content of a document rather than just its metadata.",
+  "Retrieves the content of a parliamentary document (PDF or DOCX). Supports three modes of operation depending on parameters provided.\n\nTHREE USAGE SCENARIOS:\n\n1. TARGETED RETRIEVAL (with offset - from find_person_in_document):\n   - Provide: docId + offset (+ optional maxLength, default 3000)\n   - Returns: Text CENTERED around the offset position\n   - Extracts: ~1,500 chars before + ~1,500 chars after the offset\n   - Finds natural paragraph boundaries for clean extraction\n   - Use case: Reading specific sections where a person speaks or is mentioned\n   - Example: get_document_content({docId: '2025D18220', offset: 5234})\n\n2. CONTROLLED SEQUENTIAL READING (with maxLength, no offset):\n   - Provide: docId + maxLength (no offset)\n   - Returns: First maxLength characters from document start\n   - Includes nextOffset for pagination to continue reading\n   - Use case: Reading full document in manageable chunks\n   - Example: get_document_content({docId: '2025D18220', maxLength: 5000})\n   - Then: get_document_content({docId: '2025D18220', offset: <nextOffset>, maxLength: 5000})\n\n3. FULL DOCUMENT RETRIEVAL (no offset, no maxLength):\n   - Provide: docId only\n   - Returns: Complete document text (may be 100KB+)\n   - Use case: Comprehensive document analysis when context window allows\n   - WARNING: May use significant context window space\n   - Example: get_document_content({docId: '2025D18220'})\n\nRECOMMENDED WORKFLOW FOR FINDING SPECIFIC CONTENT:\n1. Use find_person_in_document to locate where a person appears\n   → Returns characterOffset values (e.g., 5234, 12890, 23456)\n2. Use get_document_content with the characterOffset (Scenario 1)\n   → Returns 3,000-char excerpt centered on that location\n3. Review the excerpt and pagination info\n4. If more context needed, use nextOffset to continue reading\n   → get_document_content({docId: '...', offset: <nextOffset>})\n\nParameters:\n- docId: Document ID to retrieve (required)\n- offset (optional): Character position to center extraction around\n  * Use values from find_person_in_document for targeted retrieval\n  * Use nextOffset from previous response for pagination\n- maxLength (optional): Maximum characters to return\n  * Default: 3000 when offset is provided\n  * No default when offset is not provided (returns full document)\n  * Recommended: 3000-5000 for efficient context usage\n\nResponse format:\n- text: Extracted document content\n- textLength: Length of returned text\n- offset: Starting position in full document\n- nextOffset: Position to continue reading (null if at end)\n- prevOffset: Position to read backwards (null if at start)\n- hasMoreBefore: Boolean indicating more content exists before\n- hasMoreAfter: Boolean indicating more content exists after\n- note: Instructions for retrieving more content\n\nExample workflows:\n\nA) Targeted retrieval (find specific person):\n   find_person_in_document({docId: '2025D18220', personName: 'Wilders'})\n   → Returns: [{characterOffset: 5234}, {characterOffset: 12890}]\n   \n   get_document_content({docId: '2025D18220', offset: 5234})\n   → Returns: 3KB centered at position 5234\n   \n   get_document_content({docId: '2025D18220', offset: 12890})\n   → Returns: 3KB centered at position 12890\n\nB) Sequential reading in chunks:\n   get_document_content({docId: '2025D18220', maxLength: 5000})\n   → Returns: First 5KB + nextOffset: 5123\n   \n   get_document_content({docId: '2025D18220', offset: 5123, maxLength: 5000})\n   → Returns: Next 5KB + nextOffset: 10246\n\nC) Full document analysis:\n   get_document_content({docId: '2025D18220'})\n   → Returns: Complete document (may be 100KB+)",
   {
     docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from"),
-    offset: z.number().optional().describe("Optional starting position for text extraction (default: 0). Use this to retrieve additional content from a truncated document by setting it to the 'nextOffset' value from a previous response.")
+    offset: z.number().optional().describe("Optional starting position for text extraction. Use this to retrieve content from a specific position in the document. When provided with maxLength, extracts text centered around this position."),
+    maxLength: z.number().optional().describe("Maximum number of characters to return. Default: 3000 when offset is provided, no limit when offset is not provided. Set to a higher value if you need more context, but be mindful of context window limits.")
   },
-  async ({ docId, offset = 0 }) => {
+  async ({ docId, offset, maxLength }) => {
     try {
       // First try to get the document page to extract the link
       const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
@@ -850,8 +851,61 @@ mcp.tool(
         };
       }
 
-      // Summarize the text with pagination support
-      const summary = summarizeText(extractedText, 8000, offset);
+      // Implement smart chunking logic based on parameters
+      let chunk: string;
+      let actualStart: number;
+      let actualEnd: number;
+      let hasMoreBefore: boolean;
+      let hasMoreAfter: boolean;
+      let nextOffset: number | null;
+      let prevOffset: number | null;
+
+      if (offset !== undefined) {
+        // SCENARIO 1: Targeted retrieval with offset
+        const maxLen = maxLength || 3000;
+        const halfLength = Math.floor(maxLen / 2);
+        
+        // Calculate extraction window centered around offset
+        const startPos = Math.max(0, offset - halfLength);
+        const endPos = Math.min(extractedText.length, offset + halfLength);
+        
+        // Find natural paragraph boundaries
+        actualStart = findParagraphStart(extractedText, startPos);
+        actualEnd = findParagraphEnd(extractedText, endPos);
+        
+        // Extract the chunk
+        chunk = extractedText.substring(actualStart, actualEnd);
+        
+        // Calculate pagination info
+        hasMoreBefore = actualStart > 0;
+        hasMoreAfter = actualEnd < extractedText.length;
+        nextOffset = hasMoreAfter ? actualEnd : null;
+        prevOffset = hasMoreBefore ? Math.max(0, actualStart - maxLen) : null;
+        
+      } else if (maxLength !== undefined) {
+        // SCENARIO 2: Controlled reading from start
+        const maxLen = maxLength;
+        const endPos = Math.min(extractedText.length, maxLen);
+        const endBoundary = findParagraphEnd(extractedText, endPos);
+        
+        chunk = extractedText.substring(0, endBoundary);
+        actualStart = 0;
+        actualEnd = endBoundary;
+        hasMoreBefore = false;
+        hasMoreAfter = endBoundary < extractedText.length;
+        nextOffset = hasMoreAfter ? endBoundary : null;
+        prevOffset = null;
+        
+      } else {
+        // SCENARIO 3: Full document retrieval (original behavior)
+        chunk = extractedText;
+        actualStart = 0;
+        actualEnd = extractedText.length;
+        hasMoreBefore = false;
+        hasMoreAfter = false;
+        nextOffset = null;
+        prevOffset = null;
+      }
 
       // Return the document content along with metadata and pagination info
       return {
@@ -863,15 +917,23 @@ mcp.tool(
             type: details?.type || "Unknown type",
             date: details?.datum || "Unknown date",
             documentFormat: documentType,
-            content: summary.text,
-            isTruncated: summary.isTruncated,
-            totalLength: summary.totalLength,
-            currentOffset: summary.currentOffset,
-            nextOffset: summary.nextOffset,
-            remainingLength: summary.remainingLength,
-            note: summary.isTruncated ?
-              `The document content has been truncated due to length. To view more content, call this tool again with offset=${summary.nextOffset}. Example: get_document_content({docId: '${docId}', offset: ${summary.nextOffset}})` :
-              `Full document content extracted successfully from ${documentType} document.`,
+            
+            // Text content
+            text: chunk,
+            textLength: chunk.length,
+            
+            // Pagination info
+            offset: actualStart,
+            nextOffset: nextOffset,
+            prevOffset: prevOffset,
+            hasMoreBefore: hasMoreBefore,
+            hasMoreAfter: hasMoreAfter,
+            
+            // Usage instructions
+            note: hasMoreAfter 
+              ? `This is a ${chunk.length}-character excerpt. To read more, call get_document_content({docId: '${docId}', offset: ${actualEnd}, maxLength: ${maxLength || 3000}})`
+              : "This is the complete section.",
+            
             documentLink: details?.directLinkPdf || null
           }, null, 2)
         }]
@@ -894,7 +956,7 @@ mcp.tool(
 /** Find person occurrences in document */
 mcp.tool(
   "find_person_in_document",
-  "Searches for all occurrences of a person's name within a parliamentary document and returns their precise locations. This tool is essential for efficiently navigating large documents when you need to find where a specific person speaks, is mentioned, or is referenced. Instead of loading an entire bulky document into the context window, use this tool first to identify the exact sections where the person appears.\n\nThe tool uses fuzzy matching, so you don't need the person's full name:\n- Searching for \"Wilders\" will find \"Geert Wilders\", \"de heer Wilders\", \"Minister Wilders\", etc.\n- Searching for \"Rutte\" will find \"Mark Rutte\", \"Premier Rutte\", \"Minister-president Rutte\", etc.\n- Searching for \"Van der\" will find \"Van der Staaij\", \"Van der Plas\", etc.\n\nThe response includes:\n- Total number of occurrences found\n- For each occurrence:\n  - Line range (e.g., lines 45-47) showing where in the document the name appears\n  - Character offset in the full document text\n  - A brief snippet (preview) of the surrounding text to verify it's the right context\n  \nUse this tool in a two-step workflow:\n1. First, call `find_person_in_document` to locate where the person appears in the document\n2. Then, call `get_document_content` with the character offset from step 1 to retrieve only the relevant sections\n\nThis approach dramatically reduces context window usage by avoiding the need to load entire documents when searching for specific speakers or mentions. It's particularly valuable for debate transcripts, committee meetings, and other lengthy parliamentary documents where multiple people speak.\n\nExample workflow:\n- Call: find_person_in_document({docId: \"2025D18220\", personName: \"Wilders\"})\n- Get response: Found 8 occurrences at lines 45-47, 123-125, 230-232, etc.\n- Review snippets to identify which sections are relevant\n- Call: get_document_content({docId: \"2025D18220\", offset: 5234}) to read the specific section starting at character position 5234\n\nWhen to use this tool:\n- When a user asks \"What did [person] say in this document?\"\n- When searching for a specific speaker's contributions to a debate\n- When analyzing how often someone is mentioned in parliamentary proceedings\n- Before retrieving document content, to avoid loading unnecessary text",
+  "Searches for all occurrences of a person's name within a parliamentary document and returns their precise locations. This tool is essential for efficiently navigating large documents when you need to find where a specific person speaks, is mentioned, or is referenced. Instead of loading an entire bulky document into the context window, use this tool first to identify the exact sections where the person appears.\n\nThe tool uses fuzzy matching, so you don't need the person's full name:\n- Searching for \"Wilders\" will find \"Geert Wilders\", \"de heer Wilders\", \"Minister Wilders\", etc.\n- Searching for \"Rutte\" will find \"Mark Rutte\", \"Premier Rutte\", \"Minister-president Rutte\", etc.\n- Searching for \"Van der\" will find \"Van der Staaij\", \"Van der Plas\", etc.\n\nThe response includes:\n- Total number of occurrences found\n- For each occurrence:\n  - Line range (e.g., lines 45-47) showing where in the document the name appears\n  - Character offset in the full document text\n  - A brief snippet (preview) of the surrounding text to verify it's the right context\n  \nUse this tool in a two-step workflow:\n1. First, call `find_person_in_document` to locate where the person appears in the document\n2. Then, call `get_document_content` with the character offset from step 1 to retrieve only the relevant sections\n\nIMPORTANT: After finding occurrences, use get_document_content with the characterOffset. \nThe get_document_content tool now returns small chunks (3,000 characters by default) \nto avoid overwhelming the context window. You may need to make multiple calls to read \ndifferent sections or use a larger maxLength if needed.\n\nThis approach dramatically reduces context window usage by avoiding the need to load entire documents when searching for specific speakers or mentions. It's particularly valuable for debate transcripts, committee meetings, and other lengthy parliamentary documents where multiple people speak.\n\nExample workflow:\n- Call: find_person_in_document({docId: \"2025D18220\", personName: \"Wilders\"})\n- Get response: Found 8 occurrences at lines 45-47, 123-125, 230-232, etc.\n- Review snippets to identify which sections are relevant\n- Call: get_document_content({docId: \"2025D18220\", offset: 5234}) to read the specific section starting at character position 5234\n\nWhen to use this tool:\n- When a user asks \"What did [person] say in this document?\"\n- When searching for a specific speaker's contributions to a debate\n- When analyzing how often someone is mentioned in parliamentary proceedings\n- Before retrieving document content, to avoid loading unnecessary text",
   {
     docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to search in"),
     personName: z.string().describe("Name or part of a name to search for - can be a first name, last name, or full name. The tool uses fuzzy matching, so partial names work well (e.g., 'Wilders' will find 'Geert Wilders', 'de heer Wilders', etc.)")

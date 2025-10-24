@@ -198,6 +198,34 @@ export function findPersonOccurrences(text: string, personName: string): PersonO
 }
 
 /**
+ * Find the start of a paragraph near the given position
+ * Looks backwards for double newlines or start of text
+ */
+export function findParagraphStart(text: string, position: number): number {
+  // Look backwards for paragraph boundary (double newline)
+  for (let i = position; i >= 0; i--) {
+    if (text[i] === '\n' && (i === 0 || text[i-1] === '\n')) {
+      return i + 1; // Start after the newline
+    }
+  }
+  return 0; // Start of document
+}
+
+/**
+ * Find the end of a paragraph near the given position
+ * Looks forwards for double newlines or end of text
+ */
+export function findParagraphEnd(text: string, position: number): number {
+  // Look forwards for paragraph boundary
+  for (let i = position; i < text.length; i++) {
+    if (text[i] === '\n' && (i === text.length - 1 || text[i+1] === '\n')) {
+      return i; // End at the newline
+    }
+  }
+  return text.length; // End of document
+}
+
+/**
  * Normalizes text for fuzzy matching by removing accents, converting to lowercase, and cleaning up whitespace
  * @param text The text to normalize
  * @returns Normalized text
