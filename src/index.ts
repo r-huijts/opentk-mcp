@@ -18,7 +18,7 @@ import { Buffer } from "buffer";
 
 const mcp = new McpServer({
   name: "opentk",
-  version: "1.0.16",
+  version: "1.0.17",
   description: "Human‑friendly MCP toolkit for all tkconv endpoints",
 });
 
@@ -1371,7 +1371,7 @@ mcp.tool(
 // ———————————————————————————————————————————————
 // Boot up the MCP server
 async function main() {
-  console.error("Starting OpenTK MCP server (v1.0.16)…");
+  console.error("Starting OpenTK MCP server (v1.0.17)…");
   await mcp.connect(new StdioServerTransport());
 }
 main().catch((e) => {
