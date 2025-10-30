@@ -13,19 +13,19 @@ import {
   extractActivitiesFromHtml,
   extractVotingResultsFromHtml
 } from './utils/html-parser.js';
-import { extractTextFromPdf, extractTextFromDocx, summarizeText, findPersonOccurrences, findParagraphStart, findParagraphEnd } from './utils/document-extractor.js';
+import { extractTextFromPdf, extractTextFromDocx, summarizeText, findPersonOccurrences, findPartyOccurrences, findParagraphStart, findParagraphEnd, analyzeDocumentContent } from './utils/document-extractor.js';
 import { Buffer } from "buffer";
 
 const mcp = new McpServer({
   name: "opentk",
-  version: "1.0.10",
+  version: "1.0.16",
   description: "Human‑friendly MCP toolkit for all tkconv endpoints",
 });
 
 /** 1. Overview */
 mcp.tool(
   "get_overview",
-  "Provides a comprehensive overview of recent parliamentary activities, including the most recent documents and MPs celebrating birthdays today. This is the ideal starting point for any parliamentary data exploration. The response contains structured data with two main sections: 'recentDocuments' (listing the latest parliamentary documents with their IDs, titles, types, dates, and URLs) and 'birthdays' (listing MPs celebrating birthdays today). The results are paginated with 10 documents per page, and you can navigate through pages using the 'page' parameter. The tool can be used iteratively to retrieve subsequent pages of results - first call with page=1, then check the pagination.hasMoreDocuments field in the response, and if true, call again with page=2, and so on. This allows you to 'scroll' through all available documents when needed. The response includes pagination information showing the current page, whether more documents are available, and the total number of documents retrieved. Use this tool first when a user asks for general information about recent parliamentary activities or needs a starting point for research. After getting this overview, you can use other tools like 'get_document_details' to retrieve more information about specific documents, 'search_tk' to find documents on specific topics, or 'get_photo' to retrieve photos of MPs mentioned in the birthdays section.",
+  "Provides a comprehensive overview of recent parliamentary activities, including the most recent documents and MPs celebrating birthdays today. The response contains structured data with two main sections: 'recentDocuments' (listing the latest parliamentary documents with their IDs, titles, types, dates, and URLs) and 'birthdays' (listing MPs celebrating birthdays today). The results are paginated with 10 documents per page. The tool supports iterative pagination - check the pagination.hasMoreDocuments field in the response to determine if additional pages are available. The response includes pagination information showing the current page, whether more documents are available, and the total number of documents retrieved. Applicable when general information about recent parliamentary activities is needed.",
   {
     page: z.number().optional().describe("Page number for paginated results (default: 1). Each page contains 10 documents.")
   },
@@ -57,7 +57,7 @@ mcp.tool(
 /** 4. Birthdays today */
 mcp.tool(
   "birthdays_today",
-  "Lists all Members of Parliament celebrating their birthday today, including their names, political parties, and birth dates. The response is a JSON array where each entry contains the MP's ID, name, party affiliation, and other details. Use this tool when a user specifically asks about birthdays, wants to know which MPs are celebrating today, or needs to create 'on this day' content. This tool takes no parameters as it always returns today's birthdays. For a more general overview that includes birthdays along with other parliamentary information, use the 'get_overview' tool instead. If you need to display an MP's photo alongside their birthday information, you can use the 'get_photo' tool with the MP's ID from this response.",
+  "Lists all Members of Parliament celebrating their birthday today, including their names, political parties, and birth dates. The response is a JSON array where each entry contains the MP's ID, name, party affiliation, and other details. This tool takes no parameters as it always returns today's birthdays. Applicable when information about MPs' birthdays is needed.",
   {},
   async () => {
     try {
@@ -77,7 +77,7 @@ mcp.tool(
 /** 5. All MPs directory */
 mcp.tool(
   "list_persons",
-  "Provides a complete directory of current Members of Parliament with their IDs, names, titles, party affiliations, and faction memberships. The response is a JSON array where each entry contains an MP's full details. Use this tool when a user needs comprehensive information about all MPs, wants to analyze the composition of parliament by party, or needs to find specific MPs by name or party. This tool is particularly useful for creating reports about parliamentary representation or for finding the IDs of MPs that can be used with other tools like 'get_photo'. This tool takes no parameters as it returns all current MPs. For a more targeted approach when looking for specific MPs, consider using the 'search_tk' tool with the MP's name.",
+  "Provides a complete directory of current Members of Parliament with their IDs, names, titles, party affiliations, and faction memberships. The response is a JSON array where each entry contains an MP's full details including unique MP IDs that can be referenced by other tools. This tool takes no parameters as it returns all current MPs. Applicable when comprehensive information about all MPs is needed or when analyzing the composition of parliament by party.",
   {},
   async () => {
     try {
@@ -209,7 +209,7 @@ mcp.tool(
 /** 7. Search filtered by type */
 mcp.tool(
   "search_tk_filtered",
-  "Performs a targeted search within a specific category of parliamentary data. Unlike the general search, this tool allows you to limit results to only documents, activities, or cases. Use this when you need more focused search results within a particular content type. Search syntax: Searching for 'Joe Biden' finds documents containing both 'Joe' and 'Biden' anywhere in the text. Searching for \"Joe Biden\" (with quotes) finds only documents where these words appear next to each other. Searching for 'Hubert NOT Bruls' finds documents containing 'Hubert' but not 'Bruls'. The capital letters in 'NOT' are important. You can also use 'OR' and 'NEAR()' operators.",
+  "Performs a search within a specific category of parliamentary data, allowing results to be limited to only documents, activities, or cases. Returns paginated results sorted by date (most recent first). Search syntax supports: keyword searches ('Joe Biden' finds both terms), exact phrase searches (\"Joe Biden\" with quotes finds the exact phrase), exclusion ('Hubert NOT Bruls' excludes documents with 'Bruls'), and boolean operators ('OR', 'NEAR()'). Results can be returned in 'full' or 'summary' format.",
   {
     query: z.string().describe("Search term - any keyword, name, policy area, or quote you want to find in parliamentary records. Use quotes for exact phrases, 'NOT' to exclude terms, 'OR' for alternatives, and 'NEAR()' for proximity searches."),
     type: z
@@ -349,7 +349,7 @@ mcp.tool(
 /** Document details with structured data */
 mcp.tool(
   "get_document_details",
-  "Retrieves metadata about a parliamentary document in a structured JSON format, without downloading the actual document content. Returns information including title, type, document number, dates, version number, and clickable links to both the PDF version and the official Tweede Kamer webpage. This tool is ideal for getting quick information about a document and obtaining the relevant links for further access. To actually download the document content, use the 'download_document' tool instead.",
+  "Retrieves metadata about a parliamentary document in a structured JSON format, without downloading the actual document content. Returns information including title, type, document number, dates, version number, and links to both the PDF version and the official Tweede Kamer webpage.",
   {
     nummer: z.string().describe("Document number (e.g., '2024D39058') - the unique identifier for the parliamentary document you want information about")
   },
@@ -397,7 +397,7 @@ mcp.tool(
 /** Generate clickable document links */
 mcp.tool(
   "get_document_links",
-  "Converts document URLs into clickable links. This tool takes either a direct PDF link or a Tweede Kamer webpage link and returns them as properly formatted clickable links. Use this after get_document_details to make the URLs clickable.",
+  "Converts document URLs into clickable markdown-formatted links. This tool takes either a direct PDF link or a Tweede Kamer webpage link and returns them as properly formatted clickable links.",
   {
     pdfUrl: z.string().optional().describe("Direct link to the PDF document"),
     tkUrl: z.string().optional().describe("Link to the document page on Tweede Kamer website")
@@ -436,7 +436,7 @@ mcp.tool(
 /** Get committees */
 mcp.tool(
   "get_committees",
-  "Retrieves a list of all parliamentary committees with their IDs, names, and URLs. The response is a JSON array where each entry represents a committee with its unique identifier and name. Use this tool when a user asks about parliamentary committees, wants to know which committees exist, or needs to find committees related to specific policy areas. Committees are specialized groups of MPs that focus on specific domains like defense, healthcare, or finance. After getting the list of committees, you can use the 'get_committee_details' tool with a specific committee ID to retrieve more detailed information about that committee, including its members and recent activities. This tool takes no parameters as it returns all active committees.",
+  "Retrieves a list of all parliamentary committees with their IDs, names, and URLs. The response is a JSON array where each entry represents a committee with its unique identifier and name. Committees are specialized groups of MPs that focus on specific domains like defense, healthcare, or finance. This tool takes no parameters as it returns all active committees.",
   {},
   async () => {
     try {
@@ -517,7 +517,7 @@ mcp.tool(
 /** Get upcoming activities */
 mcp.tool(
   "get_upcoming_activities",
-  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. The response contains a structured JSON object with both a chronological list of activities and activities grouped by date. Each activity includes details like date, time, location, committee, type, and a URL for more information. Use this tool when a user asks about the parliamentary agenda, wants to know what events are coming up, or needs information about specific types of parliamentary activities. The results are sorted by date with the most imminent activities first. You can limit the number of results using the optional 'limit' parameter. This tool is particularly useful for helping users plan which parliamentary sessions to follow or for providing an overview of the upcoming parliamentary schedule.",
+  "Retrieves a list of upcoming parliamentary activities including debates, committee meetings, and other events. The response contains a structured JSON object with both a chronological list of activities and activities grouped by date. Each activity includes details like date, time, location, committee, type, and a URL for more information. The results are sorted by date with the most imminent activities first. The optional 'limit' parameter controls the number of results returned (default: 20, max: 100).",
   {
     limit: z.number().optional().describe("Maximum number of activities to return (default: 20, max: 100)")
   },
@@ -589,7 +589,7 @@ mcp.tool(
 /** Get voting results */
 mcp.tool(
   "get_voting_results",
-  "Retrieves recent voting results on parliamentary motions and bills. The response contains a structured JSON object with voting results sorted by date (newest first). Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which political parties voted for or against. Use this tool when a user asks about recent parliamentary votes, wants to know how parties voted on specific issues, or needs to analyze voting patterns. You can control the number of results with the 'limit' parameter and choose between 'full' or 'summary' format. The 'summary' format provides a more structured representation with renamed fields, while both formats include complete party voting information. This tool is particularly valuable for tracking political alignments, understanding coalition dynamics, and analyzing how different parties position themselves on important issues.",
+  "Retrieves recent voting results on parliamentary motions and bills. The response contains a structured JSON object with voting results sorted by date (newest first). Each result includes detailed information such as the title of the motion/bill, the date of the vote, the submitter, whether it was accepted or rejected, the vote counts (for/against), and which political parties voted for or against. The 'limit' parameter controls the number of results (default: 20, max: 100) and 'format' parameter allows choosing between 'full' or 'summary' format. The 'summary' format provides a more structured representation with renamed fields, while both formats include complete party voting information.",
   {
     limit: z.number().optional().describe("Maximum number of voting results to return (default: 20, max: 100)"),
     format: z.enum(["full", "summary"]).optional().describe("Format of the results: 'full' for complete data or 'summary' for a more structured version with renamed fields (default: 'full'). Both formats include party information.")
@@ -672,7 +672,7 @@ mcp.tool(
 /** Search documents by category */
 mcp.tool(
   "search_by_category",
-  "Performs a search specifically for documents of a certain category, such as questions, motions, or letters. The response contains a structured JSON object with paginated results and metadata. Use this tool when a user wants to find documents of a specific type that match certain keywords or when they need more targeted search results than the general search provides. The 'category' parameter lets you filter by document type: 'vragen' for parliamentary questions, 'moties' for motions, or 'alles' for all document types. The search syntax supports advanced queries: 'Joe Biden' finds documents with both terms anywhere, '\"Joe Biden\"' (with quotes) finds exact phrases, 'Hubert NOT Bruls' finds documents with 'Hubert' but not 'Bruls' (capital NOT is required), and you can use 'OR' for alternatives. Results are sorted by date with the most recent documents first. This tool is particularly useful for finding specific types of parliamentary documents on a given topic.",
+  "Performs a search for documents of a certain category, such as questions ('vragen'), motions ('moties'), or all document types ('alles'). The response contains a structured JSON object with paginated results and metadata. The search syntax supports advanced queries: 'Joe Biden' finds documents with both terms anywhere, '\"Joe Biden\"' (with quotes) finds exact phrases, 'Hubert NOT Bruls' finds documents with 'Hubert' but not 'Bruls' (capital NOT is required), and 'OR' for alternatives. Results are sorted by date with the most recent documents first.",
   {
     query: z.string().describe("Search term - any keyword, name, policy area, or quote you want to find in parliamentary records"),
     category: z.enum(["vragen", "moties", "alles"]).describe("Document category: 'vragen' for questions, 'moties' for motions, 'alles' for all document types"),
@@ -767,7 +767,7 @@ mcp.tool(
 /** Get document content */
 mcp.tool(
   "get_document_content",
-  "Retrieves the content of a parliamentary document (PDF or DOCX). Supports three modes of operation depending on parameters provided.\n\nTHREE USAGE SCENARIOS:\n\n1. TARGETED RETRIEVAL (with offset - from find_person_in_document):\n   - Provide: docId + offset (+ optional maxLength, default 3000)\n   - Returns: Text CENTERED around the offset position\n   - Extracts: ~1,500 chars before + ~1,500 chars after the offset\n   - Finds natural paragraph boundaries for clean extraction\n   - Use case: Reading specific sections where a person speaks or is mentioned\n   - Example: get_document_content({docId: '2025D18220', offset: 5234})\n\n2. CONTROLLED SEQUENTIAL READING (with maxLength, no offset):\n   - Provide: docId + maxLength (no offset)\n   - Returns: First maxLength characters from document start\n   - Includes nextOffset for pagination to continue reading\n   - Use case: Reading full document in manageable chunks\n   - Example: get_document_content({docId: '2025D18220', maxLength: 5000})\n   - Then: get_document_content({docId: '2025D18220', offset: <nextOffset>, maxLength: 5000})\n\n3. FULL DOCUMENT RETRIEVAL (no offset, no maxLength):\n   - Provide: docId only\n   - Returns: Complete document text (may be 100KB+)\n   - Use case: Comprehensive document analysis when context window allows\n   - WARNING: May use significant context window space\n   - Example: get_document_content({docId: '2025D18220'})\n\nRECOMMENDED WORKFLOW FOR FINDING SPECIFIC CONTENT:\n1. Use find_person_in_document to locate where a person appears\n   → Returns characterOffset values (e.g., 5234, 12890, 23456)\n2. Use get_document_content with the characterOffset (Scenario 1)\n   → Returns 3,000-char excerpt centered on that location\n3. Review the excerpt and pagination info\n4. If more context needed, use nextOffset to continue reading\n   → get_document_content({docId: '...', offset: <nextOffset>})\n\nParameters:\n- docId: Document ID to retrieve (required)\n- offset (optional): Character position to center extraction around\n  * Use values from find_person_in_document for targeted retrieval\n  * Use nextOffset from previous response for pagination\n- maxLength (optional): Maximum characters to return\n  * Default: 3000 when offset is provided\n  * No default when offset is not provided (returns full document)\n  * Recommended: 3000-5000 for efficient context usage\n\nResponse format:\n- text: Extracted document content\n- textLength: Length of returned text\n- offset: Starting position in full document\n- nextOffset: Position to continue reading (null if at end)\n- prevOffset: Position to read backwards (null if at start)\n- hasMoreBefore: Boolean indicating more content exists before\n- hasMoreAfter: Boolean indicating more content exists after\n- note: Instructions for retrieving more content\n\nExample workflows:\n\nA) Targeted retrieval (find specific person):\n   find_person_in_document({docId: '2025D18220', personName: 'Wilders'})\n   → Returns: [{characterOffset: 5234}, {characterOffset: 12890}]\n   \n   get_document_content({docId: '2025D18220', offset: 5234})\n   → Returns: 3KB centered at position 5234\n   \n   get_document_content({docId: '2025D18220', offset: 12890})\n   → Returns: 3KB centered at position 12890\n\nB) Sequential reading in chunks:\n   get_document_content({docId: '2025D18220', maxLength: 5000})\n   → Returns: First 5KB + nextOffset: 5123\n   \n   get_document_content({docId: '2025D18220', offset: 5123, maxLength: 5000})\n   → Returns: Next 5KB + nextOffset: 10246\n\nC) Full document analysis:\n   get_document_content({docId: '2025D18220'})\n   → Returns: Complete document (may be 100KB+)",
+  "Retrieves the content of a parliamentary document (PDF or DOCX). This tool supports three modes of operation depending on parameters provided:\n\n1. TARGETED RETRIEVAL (with offset): Provide docId + offset (+ optional maxLength, default 3000). Returns text centered around the offset position, extracting approximately 1,500 chars before and 1,500 chars after the offset. Finds natural paragraph boundaries for clean extraction.\n\n2. SEQUENTIAL READING (with maxLength, no offset): Provide docId + maxLength (no offset). Returns first maxLength characters from document start. Includes nextOffset for pagination to continue reading.\n\n3. FULL DOCUMENT RETRIEVAL (no offset, no maxLength): Provide docId only. Returns complete document text (may be 100KB+). Note: May use significant context window space.\n\nPARAMETERS:\n- docId: Document ID to retrieve (required)\n- offset (optional): Character position to center extraction around. Can be obtained from find_person_in_document or from the nextOffset value in previous responses.\n- maxLength (optional): Maximum characters to return. Default is 3000 when offset is provided, no limit when offset is not provided.\n\nRESPONSE FORMAT:\n- text: Extracted document content\n- textLength: Length of returned text\n- offset: Starting position in full document\n- nextOffset: Position to continue reading (null if at end)\n- prevOffset: Position to read backwards (null if at start)\n- hasMoreBefore: Boolean indicating more content exists before\n- hasMoreAfter: Boolean indicating more content exists after\n- note: Instructions for retrieving more content",
   {
     docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to download and extract text from"),
     offset: z.number().optional().describe("Optional starting position for text extraction. Use this to retrieve content from a specific position in the document. When provided with maxLength, extracts text centered around this position."),
@@ -956,7 +956,7 @@ mcp.tool(
 /** Find person occurrences in document */
 mcp.tool(
   "find_person_in_document",
-  "Searches for all occurrences of a person's name within a parliamentary document and returns their precise locations. This tool is essential for efficiently navigating large documents when you need to find where a specific person speaks, is mentioned, or is referenced. Instead of loading an entire bulky document into the context window, use this tool first to identify the exact sections where the person appears.\n\nThe tool uses fuzzy matching, so you don't need the person's full name:\n- Searching for \"Wilders\" will find \"Geert Wilders\", \"de heer Wilders\", \"Minister Wilders\", etc.\n- Searching for \"Rutte\" will find \"Mark Rutte\", \"Premier Rutte\", \"Minister-president Rutte\", etc.\n- Searching for \"Van der\" will find \"Van der Staaij\", \"Van der Plas\", etc.\n\nThe response includes:\n- Total number of occurrences found\n- For each occurrence:\n  - Line range (e.g., lines 45-47) showing where in the document the name appears\n  - Character offset in the full document text\n  - A brief snippet (preview) of the surrounding text to verify it's the right context\n  \nUse this tool in a two-step workflow:\n1. First, call `find_person_in_document` to locate where the person appears in the document\n2. Then, call `get_document_content` with the character offset from step 1 to retrieve only the relevant sections\n\nIMPORTANT: After finding occurrences, use get_document_content with the characterOffset. \nThe get_document_content tool now returns small chunks (3,000 characters by default) \nto avoid overwhelming the context window. You may need to make multiple calls to read \ndifferent sections or use a larger maxLength if needed.\n\nThis approach dramatically reduces context window usage by avoiding the need to load entire documents when searching for specific speakers or mentions. It's particularly valuable for debate transcripts, committee meetings, and other lengthy parliamentary documents where multiple people speak.\n\nExample workflow:\n- Call: find_person_in_document({docId: \"2025D18220\", personName: \"Wilders\"})\n- Get response: Found 8 occurrences at lines 45-47, 123-125, 230-232, etc.\n- Review snippets to identify which sections are relevant\n- Call: get_document_content({docId: \"2025D18220\", offset: 5234}) to read the specific section starting at character position 5234\n\nWhen to use this tool:\n- When a user asks \"What did [person] say in this document?\"\n- When searching for a specific speaker's contributions to a debate\n- When analyzing how often someone is mentioned in parliamentary proceedings\n- Before retrieving document content, to avoid loading unnecessary text",
+  "Searches for all occurrences of a person's name within a parliamentary document and returns their precise locations. This tool efficiently navigates large documents by identifying where specific persons speak, are mentioned, or are referenced without loading the entire document.\n\nThe tool uses fuzzy matching, so partial names work well:\n- Searching for \"Wilders\" will find \"Geert Wilders\", \"de heer Wilders\", \"Minister Wilders\", etc.\n- Searching for \"Rutte\" will find \"Mark Rutte\", \"Premier Rutte\", \"Minister-president Rutte\", etc.\n- Searching for \"Van der\" will find \"Van der Staaij\", \"Van der Plas\", etc.\n\nThe response includes:\n- Total number of occurrences found\n- For each occurrence:\n  - Line range (e.g., lines 45-47) showing where in the document the name appears\n  - Character offset in the full document text (can be used with get_document_content)\n  - A brief snippet (preview) of the surrounding text to verify context\n\nParticularly valuable for debate transcripts, committee meetings, and lengthy parliamentary documents where multiple people speak.",
   {
     docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to search in"),
     personName: z.string().describe("Name or part of a name to search for - can be a first name, last name, or full name. The tool uses fuzzy matching, so partial names work well (e.g., 'Wilders' will find 'Geert Wilders', 'de heer Wilders', etc.)")
@@ -1079,10 +1079,299 @@ mcp.tool(
   }
 );
 
+/** Find party occurrences in document */
+mcp.tool(
+  "find_party_in_document",
+  "Searches for all occurrences of a political party within a parliamentary document and returns their precise locations. This tool efficiently navigates large documents by identifying where specific political parties are mentioned, referenced, or their positions are discussed without loading the entire document.\n\nThe tool uses fuzzy matching with party abbreviations:\n- Searching for \"VVD\" will find \"VVD\", \"de VVD\", \"VVD-fractie\", \"VVD-kamerlid\", etc.\n- Searching for \"PVV\" will find \"PVV\", \"de PVV\", \"PVV-fractie\", \"PVV-kamerlid\", etc.\n- Searching for \"CDA\" will find \"CDA\", \"de CDA\", \"CDA-fractie\", \"CDA-kamerlid\", etc.\n- Searching for \"D66\" will find \"D66\", \"de D66\", \"D66-fractie\", \"D66-kamerlid\", etc.\n\nThe response includes:\n- Total number of occurrences found\n- For each occurrence:\n  - Line range (e.g., lines 45-47) showing where in the document the party appears\n  - Character offset in the full document text (can be used with get_document_content)\n  - A brief snippet (preview) of the surrounding text to verify context\n\nParticularly valuable for debate transcripts, committee meetings, and lengthy parliamentary documents where multiple parties' positions are discussed.",
+  {
+    docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to search in"),
+    partyName: z.string().describe("Party abbreviation to search for - can be official party abbreviations like 'VVD', 'PVV', 'CDA', 'D66', 'GroenLinks', 'PvdA', 'SP', etc. The tool uses fuzzy matching, so it will find variations like 'de VVD', 'VVD-fractie', etc.")
+  },
+  async ({ docId, partyName }) => {
+    try {
+      // First try to get the document page to extract the link
+      const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
+
+      // Check if the document exists
+      if (html.includes('Found nothing in document.html!!')) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Get document details for metadata
+      const details = extractDocumentDetailsFromHtml(html, BASE_URL);
+
+      // Extract the document link
+      const documentLink = extractDocumentLink(html);
+
+      if (documentLink === 'NOT_FOUND') {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      } else if (!documentLink) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Could not find document link for document ${docId}`,
+              suggestion: "The document exists but no download link was found. Try using get_document_details to verify the document ID is correct.",
+              documentUrl: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Download the document
+      const { data, contentType } = await apiService.fetchBinary(`/${documentLink}`);
+
+      // Extract text based on document type
+      let extractedText = '';
+      let documentType = '';
+
+      if (contentType.includes('pdf')) {
+        // Handle PDF documents using pdf-parse library
+        extractedText = await extractTextFromPdf(data);
+        documentType = 'PDF';
+      } else if (contentType.includes('wordprocessingml.document') || contentType.includes('msword') || documentLink.endsWith('.docx') || documentLink.endsWith('.doc')) {
+        // Handle Word documents (DOCX/DOC) using mammoth library
+        extractedText = await extractTextFromDocx(data);
+        documentType = 'Word';
+      } else {
+        // Unsupported document type
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Unsupported document type (content type: ${contentType})`,
+              suggestion: "This tool currently only supports PDF and Word (DOCX) documents.",
+              documentLink: details?.directLinkPdf || null
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Find party occurrences in the extracted text
+      const occurrences = findPartyOccurrences(extractedText, partyName);
+
+      // Return the results with metadata and usage suggestions
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            docId,
+            title: details?.title || "Unknown title",
+            type: details?.type || "Unknown type",
+            date: details?.datum || "Unknown date",
+            documentFormat: documentType,
+            searchTerm: partyName,
+            totalOccurrences: occurrences.length,
+            occurrences: occurrences,
+            usageInstructions: {
+              nextStep: "Use get_document_content with specific character offsets to retrieve relevant sections",
+              example: `get_document_content({docId: '${docId}', offset: ${occurrences.length > 0 ? occurrences[0]?.characterOffset ?? 0 : 0}})`,
+              note: "Each occurrence includes a characterOffset that you can use with get_document_content to read that specific section"
+            },
+            documentLink: details?.directLinkPdf || null
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: `Error searching for party in document: ${error.message || 'Unknown error'}`,
+            suggestion: "Try using get_document_details to verify the document exists and is accessible.",
+            documentLink: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
+/** Analyze document relevance */
+mcp.tool(
+  "analyze_document_relevance",
+  "Performs intelligent pre-analysis of a parliamentary document to determine its relevance WITHOUT loading the full content into your context window. This is a lightweight reconnaissance tool that extracts key information about a document's content before you commit to reading the full text. Use this to efficiently assess whether a document is worth reading in detail, especially when you're uncertain about relevance or need to triage multiple documents.\n\n" +
+  "WHAT THIS TOOL RETURNS:\n" +
+  "- **Keywords**: Top 10-15 most important terms extracted via TF-IDF analysis, revealing the document's main subjects (e.g., 'klimaat', 'belasting', 'migratie', 'gezondheidszorg')\n" +
+  "- **Named Entities**: Structured lists of people mentioned (MPs, ministers, officials), political parties (VVD, PVV, CDA, D66, GroenLinks, etc.), and organizations\n" +
+  "- **Statistics**: Document length (character count, word count), estimated reading time, and structural information about the document format\n" +
+  "- **Preview**: The first ~500 characters of the document for immediate context\n" +
+  "- **Topics**: Main themes and subject areas identified through content analysis\n" +
+  "- **Relevance Score** (optional): If you provide the searchTerms parameter, returns a 0-100 score indicating how well the document matches those specific terms, helping you rank multiple documents by relevance\n\n" +
+  "WHEN TO USE THIS TOOL:\n" +
+  "- When you need to understand what a document is about before reading it in full\n" +
+  "- When you have multiple candidate documents and need to determine which ones are most relevant\n" +
+  "- When you want to verify a document contains specific topics or entities before loading its full content\n" +
+  "- When context window efficiency is important and you want to avoid loading large documents that may not be relevant\n" +
+  "- When a user asks about document content but you're uncertain if it matches their query\n" +
+  "- When you need to filter or triage search results before committing to detailed reading\n\n" +
+  "WHEN NOT TO USE THIS TOOL:\n" +
+  "- When the user explicitly requests the full content or specific quotes from a document\n" +
+  "- When you already have high confidence the document is relevant and need to read it anyway\n" +
+  "- When you specifically need to locate where a person appears in a document (find_person_in_document is optimized for this)\n" +
+  "- When you only need structural metadata like title, date, and links\n\n" +
+  "RELATIONSHIP TO OTHER DOCUMENT TOOLS:\n" +
+  "- **get_document_content**: This analysis tool is lighter weight (~1-2KB) compared to reading full documents (10-50KB). Both tools access document content but serve different purposes: analysis for triage and overview, get_document_content for detailed reading.\n" +
+  "- **find_person_in_document**: The analysis tool identifies IF a person is mentioned; find_person_in_document locates WHERE they appear with character offsets. Analysis provides presence information, find_person provides location information.\n" +
+  "- **get_document_details**: Details provides structural metadata (title, type, date, links); this tool provides content intelligence (keywords, entities, topics). They offer complementary information about documents.\n" +
+  "- **search_tk/search_tk_filtered**: Search identifies candidate documents; this tool provides detailed content analysis of those candidates.\n\n" +
+  "CONTEXT WINDOW EFFICIENCY:\n" +
+  "This tool returns approximately 1-2KB of analysis data versus 10-50KB for reading full documents. Using this tool before get_document_content can reduce context usage by 80-90% when documents turn out to be irrelevant. It's particularly valuable when evaluating multiple documents or when a user's query is exploratory rather than specific.\n\n" +
+  "The searchTerms parameter is powerful for ranking documents by relevance: when provided, it calculates a 0-100 relevance score based on how well the document matches your search terms, allowing you to objectively compare multiple documents before deciding which to read in full.",
+  {
+    docId: z.string().describe("Document ID (e.g., '2024D39058') - the unique identifier for the parliamentary document you want to analyze"),
+    searchTerms: z.array(z.string()).optional().describe("Optional: Array of terms or phrases to check relevance against (e.g., ['climate', 'energy', 'klimaat']). When provided, the tool calculates a relevance score (0-100) indicating how well the document matches these terms. Useful for comparing and ranking multiple documents.")
+  },
+  async ({ docId, searchTerms }) => {
+    try {
+      // First try to get the document page to extract the link
+      const html = await apiService.fetchHtml(`/document.html?nummer=${encodeURIComponent(docId)}`);
+
+      // Check if the document exists
+      if (html.includes('Found nothing in document.html!!')) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Get document details for metadata
+      const details = extractDocumentDetailsFromHtml(html, BASE_URL);
+
+      // Extract the document link
+      const documentLink = extractDocumentLink(html);
+
+      if (documentLink === 'NOT_FOUND') {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Document not found: ${docId}`,
+              suggestion: "The document ID may be incorrect or the document doesn't exist in the tkconv database. Try a different document ID or use the search tool to find relevant documents.",
+              searchUrl: `${BASE_URL}/search.html`
+            }, null, 2)
+          }]
+        };
+      } else if (!documentLink) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Could not find document link for document ${docId}`,
+              suggestion: "The document exists but no download link was found. Try using get_document_details to verify the document ID is correct.",
+              documentUrl: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Download the document
+      const { data, contentType } = await apiService.fetchBinary(`/${documentLink}`);
+
+      // Extract text based on document type
+      let extractedText = '';
+      let documentType = '';
+
+      if (contentType.includes('pdf')) {
+        // Handle PDF documents using pdf-parse library
+        extractedText = await extractTextFromPdf(data);
+        documentType = 'PDF';
+      } else if (contentType.includes('wordprocessingml.document') || contentType.includes('msword') || documentLink.endsWith('.docx') || documentLink.endsWith('.doc')) {
+        // Handle Word documents (DOCX/DOC) using mammoth library
+        extractedText = await extractTextFromDocx(data);
+        documentType = 'Word';
+      } else {
+        // Unsupported document type
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Unsupported document type (content type: ${contentType})`,
+              suggestion: "This tool currently only supports PDF and Word (DOCX) documents.",
+              documentLink: details?.directLinkPdf || null
+            }, null, 2)
+          }]
+        };
+      }
+
+      // Analyze the document content
+      const analysis = await analyzeDocumentContent(extractedText, searchTerms);
+
+      // Return the analysis results with metadata
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            docId,
+            title: details?.title || "Unknown title",
+            type: details?.type || "Unknown type",
+            date: details?.datum || "Unknown date",
+            documentFormat: documentType,
+            
+            // Analysis results
+            keywords: analysis.keywords,
+            entities: analysis.entities,
+            statistics: analysis.statistics,
+            topics: analysis.topics,
+            relevanceScore: analysis.relevanceScore,
+            preview: analysis.preview,
+            
+            // Usage instructions
+            nextSteps: analysis.relevanceScore && analysis.relevanceScore > 60
+              ? "This document appears highly relevant. Consider using get_document_content or find_person_in_document to read specific sections."
+              : analysis.relevanceScore && analysis.relevanceScore > 30
+              ? "This document has moderate relevance. Review the keywords and entities to decide if it's worth reading in detail."
+              : searchTerms && searchTerms.length > 0
+              ? "This document has low relevance to your search terms. Consider analyzing other documents first."
+              : "Review the keywords, entities, and topics to determine if this document is relevant to your needs.",
+            
+            documentLink: details?.directLinkPdf || null
+          }, null, 2)
+        }]
+      };
+    } catch (error: any) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: `Error analyzing document: ${error.message || 'Unknown error'}`,
+            suggestion: "Try using get_document_details to verify the document exists and is accessible.",
+            documentLink: `${BASE_URL}/document.html?nummer=${encodeURIComponent(docId)}`
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
 // ———————————————————————————————————————————————
 // Boot up the MCP server
 async function main() {
-  console.error("Starting OpenTK MCP server (v1.0.11)…");
+  console.error("Starting OpenTK MCP server (v1.0.16)…");
   await mcp.connect(new StdioServerTransport());
 }
 main().catch((e) => {
